@@ -16,7 +16,7 @@ import twocomplex
 if __name__ == "__main__":
     # Main
     
-    N = 150 # The length of a wire
+    N = 30 # The length of a wire
     
     # Scaling factor
     h = (np.pi)/(N-1)
