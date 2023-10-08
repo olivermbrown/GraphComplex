@@ -539,7 +539,7 @@ class Complex:
         
         return None
     
-    def lapl_spectrum(self,h,dps):
+    def lapl_spectrum(self,h,dps,N_eigs):
         # Calculate the spectrum of a matrix M
         # Scaling factor h
         # Decimal places to round to is dps
@@ -549,7 +549,7 @@ class Complex:
 
         matrix = matrix.astype('float32')
         matrix.tocsr()
-        eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=30,return_eigenvectors=False)
+        eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=False)
 
         spec = (h)**(-2) * np.abs(eigs)
         spec.sort()
@@ -565,7 +565,7 @@ class Complex:
         
         matrix = matrix.astype('float32')
         matrix.tocsr()
-        eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=5,return_eigenvectors=True)
+        eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
         
         spec = (h)**(-2) * np.abs(eigvals)
         spec.sort()

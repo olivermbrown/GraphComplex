@@ -153,11 +153,61 @@ class Complex:
         #spec = (h)**(-2) * np.abs(eigs)
         spec.sort()
         return np.round(spec,dps)
+    
+    def lapl_solve(self,h,dps):
+        # Calculate the spectrum of a matrix M
+        # Scaling factor h
+        # Decimal places to round to is dps
+        
+        self.simplify_lapl()
+        matrix = self.sL
+        
+        matrix = matrix.astype('float32')
+        matrix.tocsr()
+        eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
+        
+        spec = (h)**(-1) * np.sqrt(np.abs(eigvals))
+        spec.sort()
+        return np.round(spec,dps), eigvecs
+
+def plot_state(l, state):
+    # Plot a state that solves the Schrodinger equation on wire l
+    
+    N = l.N
+    #pos = nx.spring_layout(D.G)
+    
+    coords = []
+    for node in l.G:
+        if node not in l.removed_nodes:
+            x = node/N
+            #y = node[1]/N
+            coords.append([x])
+            pass
+        else:
+            pass
+        pass
+    
+    # Define coordinates
+    coords = np.array(coords)
+    
+    # Plot the surface
+    xs = coords[:,0]
+    #ys = coords[:,1]
+    
+    # Plot 2d line
+    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots(subplot_kw={"projection": "2d"})
+    state = np.real(state)
+    ax.plot(xs, state)
+    #ax.plot_trisurf(xs, state, vmin=state.min() * 2, cmap=cm.autumn)
+    
+    
+    return plt
 
 if __name__ == "__main__":
     # Main
     
-    N = 500 # The length of the line-chain
+    N = 100 # The length of the line-chain
     
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -188,9 +238,17 @@ if __name__ == "__main__":
     SD = Network.sL.toarray()
     print(SD)
     
-    spectrum = Network.lapl_spectrum(h,2)
-    
+    spectrum, states = Network.lapl_solve(h,2)
+
     print(spectrum)
+    
+    i = 0
+    n = 1
+    for line in cells:
+        plot = plot_state(line, states[i:N+i,n])
+        plot.show()
+        i += N - 1
+        pass
     
     pass
 
