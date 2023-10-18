@@ -56,9 +56,19 @@ def twoparticlesYgraph(N):
         Network.exterior_bc("dirichlet")
         
         Network.simplify_lapl()
-        spectrum = Network.lapl_spectrum(h,2,N_eigs)
+        #spectrum = Network.lapl_spectrum(h,2,N_eigs)
+        spectrum, states = Network.lapl_solve(h,2)
         
-        return spectrum
+        Network.print_eqs()
+        
+        print(spectrum)
+        n = 0
+        for cell in cells:
+            plot = twocomplex.plot_state(cell, states[:,n])
+            plot.show()
+            pass
+        
+        return spectrum, states
 
 if __name__ == "__main__":
         # Main
@@ -70,37 +80,21 @@ if __name__ == "__main__":
         global N_eigs
         N_eigs = 30
         
-        eval = []
+        #eval = []
         
-        Ns = [x for x in range (10,Nmax,10)]
-        
-        #for N in Ns:
-        #        spectrum = twoparticlesYgraph(N,N_eigs)
-        #        eval.append(2*spectrum)
-        #        pass
-        
-        eval = list(map(twoparticlesYgraph,Ns))
-        
-        print(eval)
-        
-        eval = 2*np.array(eval)
+        #Ns = [x for x in range (10,Nmax,10)]
+    
+        #spec = twoparticlesYgraph(50)
+        #print(spec)
+        #print(2*spec)
 
-        for i in range (0,N_eigs):
-                plt.plot(Ns,eval[:,i])
-                pass
-        plt.show()
-        pass
-"""
-    #print(spectrum)
-    #print("Scaling factor:")
-    #print(2*spectrum)
-    #Network.print_eqs()
-
-    spectrum, states = Network.lapl_solve(h,2)
-    print(spectrum)
-    n = 4
-    for cell in cells:
+        spectrum, states = twoparticlesYgraph(5)#Network.lapl_solve(h,2)
+        print(spectrum)
+        
+        """
+        n = 0
+        for cell in cells:
             plot = twocomplex.plot_state(cell, states[:,n])
             plot.show()
             pass
-"""
+        """

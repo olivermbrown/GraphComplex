@@ -4,6 +4,7 @@ Code to solve the Laplacian on a CW 1-Complex
 
 import numpy as np
 import scipy as sp
+import sympy as sym
 import networkx as nx
 
 import matplotlib.pyplot as plt
@@ -40,6 +41,48 @@ class Complex:
         self.L = L
 
         self.lapl_gen = True
+        
+        return None
+    
+    def apply_dirichlet(self, line, end):
+        # Apply Dirichlet boundary conditions to a particular edge in the complex
+        
+        #self.check_if_lapl_gen()
+        
+        N = line.N
+        L = self.L
+        cells = self.cells
+        el = self.eliminated_vars
+        
+        nodes_list = list(line.G.nodes())
+        #edge_coords = [nodes_list.index(x) for x in end]
+        
+        i = cells.index(line)
+        for cell in cells:
+            if cells.index(cell) < i:
+                t = end
+                t += cell.G.number_of_nodes()
+                end = t
+                pass
+            else:
+                pass
+            pass
+        
+        
+        L[end] = 0
+        L[:,end] = 0
+        
+        self.L = L
+        
+        el.append(end)
+        el.sort()
+        self.eliminated_vars = el
+        """
+        for node in edge:
+            domain.removed_nodes.append(node)
+            pass
+        """
+        #self.edges_with_bc_appl.append((domain,edge))
         
         return None
     
@@ -97,8 +140,7 @@ class Complex:
                 pass
             pass
         
-        x0 = X[0]
-        for x1 in X[1:]:
+        for x1 in X:
             for row in range (0, dim):
                 if L[row, x1] != 0:
                     e = L[row, x1]
@@ -148,9 +190,8 @@ class Complex:
     
         #matrix = matrix.astype('float32')
         eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=False)
-    
+        
         spec = (h)**(-1) * np.sqrt(np.abs(eigs))
-        #spec = (h)**(-2) * np.abs(eigs)
         spec.sort()
         return np.round(spec,dps)
     
@@ -167,8 +208,40 @@ class Complex:
         eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
         
         spec = (h)**(-1) * np.sqrt(np.abs(eigvals))
-        spec.sort()
+        #spec.sort()
         return np.round(spec,dps), eigvecs
+    
+    def print_eqs(self):
+        # Print out the system of equations described by the Laplacian matrix
+        # to check that the boundary conditions have been correctly implemented
+        
+        # Generate a symbol vector of function values
+    
+        L = self.L
+        
+        dim = L.shape[0]
+        
+        els = []
+        
+        for i in range (0,dim):
+            symbol = "f" + str(i)
+            els.append(symbol)
+            pass
+        
+        v = sym.Matrix(els)
+        
+        M = self.L.toarray()
+        
+        LHS = M * v
+    
+        c = 0
+        for row in LHS:
+            print("Equation " + str(c) + ":")
+            print(row)
+            c += 1
+            pass
+        
+        return None
 
 def plot_state(l, state):
     # Plot a state that solves the Schrodinger equation on wire l
@@ -176,6 +249,7 @@ def plot_state(l, state):
     N = l.N
     #pos = nx.spring_layout(D.G)
     
+    """
     coords = []
     for node in l.G:
         if node not in l.removed_nodes:
@@ -186,12 +260,14 @@ def plot_state(l, state):
         else:
             pass
         pass
+    """
     
     # Define coordinates
-    coords = np.array(coords)
+    #coords = np.array(coords)
+    coords = np.linspace(0,1,N-1,endpoint=False)
     
     # Plot the surface
-    xs = coords[:,0]
+    xs = coords[1:]
     #ys = coords[:,1]
     
     # Plot 2d line
@@ -207,7 +283,7 @@ def plot_state(l, state):
 if __name__ == "__main__":
     # Main
     
-    N = 100 # The length of the line-chain
+    N = 50 # The length of the line-chain
     
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -217,6 +293,7 @@ if __name__ == "__main__":
     l3 = lineFDM.Line(N)
     
     cells = [l1,l2,l3]
+    #cells = [l1,l2]
     
     Network = Complex(cells)
     
@@ -227,6 +304,11 @@ if __name__ == "__main__":
     print(M)
     
     gluings = [(l1,l1.start),(l2,l2.start),(l3,l3.start)]
+    #gluings = [(l1,l1.start),(l2,l2.start)]
+    
+    Network.apply_dirichlet(l1,l1.end)
+    Network.apply_dirichlet(l2,l2.end)
+    Network.apply_dirichlet(l3,l3.end)
 
     Network.glue(gluings)
     #print(Network.L)
@@ -236,21 +318,27 @@ if __name__ == "__main__":
     #print(M[9])
     Network.simplify_lapl()
     SD = Network.sL.toarray()
-    print(SD)
+    #print(SD)
+    
+    Network.print_eqs()
     
     spectrum, states = Network.lapl_solve(h,2)
 
     print(spectrum)
     
-    i = 0
-    n = 1
+    # Choose state to plot
+    n = 3
+    vector = states[:,n]
+    states = np.array_split(vector, 3)
+    
     for line in cells:
-        plot = plot_state(line, states[i:N+i,n])
+        i = cells.index(line)
+        plot = plot_state(line, states[i])
         plot.show()
-        i += N - 1
         pass
     
     pass
+    
 
 """
 def continuity(self,list):

@@ -16,7 +16,7 @@ import twocomplex
 if __name__ == "__main__":
     # Main
     
-    N = 100 # The length of a wire
+    N = 50 # The length of a wire
     
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -52,18 +52,18 @@ if __name__ == "__main__":
     N = Network.simplify_lapl()
     new = Network.sL
     #print(new.toarray())
-    spectrum = Network.lapl_spectrum(h,2)
+    spectrum = Network.lapl_spectrum(h,2,20)
     print(spectrum)
     print("Scaling factor:")
     print(5/spectrum[0])
     print(4*spectrum)
-    """
+    
     spectrum, states = Network.lapl_solve(h,2)
     print(spectrum)
     n = 4
     for cell in cells:
-            plot = plot_state(cell, states[:,n])
+            plot = Network.plot_state(cell, states[:,n])
             plot.show()
             pass
-    """
+    
     pass

@@ -642,10 +642,34 @@ def plot_state(D, state):
 if __name__ == "__main__":
     # Main
     
-    N = 50 # The length of a wire
+    N = 20 # The length of a wire
     
     # Scaling factor
     h = (np.pi)/(N-1)
+    
+    D11 = squareFDM.Domain(N)
+    D11.split_domain("dirichlet")
+    
+    cells = [D11]
+    
+    Network = Complex(cells)
+    
+    Network.diagonal_bc("dirichlet")
+    
+    Network.exterior_bc("dirichlet")
+    
+    Network.simplify_lapl()
+    #spectrum = Network.lapl_spectrum(h,2,N_eigs)
+    spectrum, states = Network.lapl_solve(h,2)
+    
+    Network.print_eqs()
+    
+    print(spectrum)
+    n = 1
+    for cell in cells:
+        plot = plot_state(cell, states[:,n])
+        plot.show()
+        pass
     
     pass
 
