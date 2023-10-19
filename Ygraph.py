@@ -73,28 +73,9 @@ def twoparticlesYgraph(N):
 if __name__ == "__main__":
         # Main
         
-        #N = 80 # The length of a wire
-        
-        Nmax = 130
-        
-        global N_eigs
-        N_eigs = 30
-        
-        #eval = []
-        
-        #Ns = [x for x in range (10,Nmax,10)]
-    
-        #spec = twoparticlesYgraph(50)
-        #print(spec)
-        #print(2*spec)
+        N = 80
 
-        spectrum, states = twoparticlesYgraph(5)#Network.lapl_solve(h,2)
+        spectrum, states = twoparticlesYgraph(N)
         print(spectrum)
         
-        """
-        n = 0
-        for cell in cells:
-            plot = twocomplex.plot_state(cell, states[:,n])
-            plot.show()
-            pass
-        """
+        pass
