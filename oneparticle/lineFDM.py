@@ -22,11 +22,7 @@ class Line:
         # Find the nodes in the graph at the endpoints of the line
         N = self.N
         nodes_list = list(self.G.nodes())
-        #endpoint_indices = [0,N-1]
-        #endpoint_indices.sort()
-        #self.corners = []
-        #for i in corner_indices:
-        #    self.corners.append(nodes_list[i])
+        
         endpoints = []
         self.start = nodes_list[0]
         endpoints.append(nodes_list[0])
@@ -311,6 +307,15 @@ def plot_state(D, state):
     
     
     return plt
+
+class End:
+    # A class for the ends of a line
+
+    def __init__(self, line, end):
+        self.line = line
+        self.end = end
+
+        return None
 
 if __name__=="__main__":
     # Main

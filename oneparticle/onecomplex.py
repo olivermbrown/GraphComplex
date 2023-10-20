@@ -9,6 +9,7 @@ import networkx as nx
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from itertools import groupby
 import lineFDM
 
 class Complex:
@@ -16,14 +17,149 @@ class Complex:
     
     def __init__(self,cells):
         self.cells = cells
+        #self.create_domain_dict()
         self.lapl_gen = False
         self.removed_nodes = []
         self.eliminated_vars = []
+        self.h = 1
+        self.find_scaling()
+        self.edges_with_bc_appl = []
+        self.gluings = []
+        return None
+    
+    """
+    def create_domain_dict(self):
+        # Create a dictionary referencing cells and endpoints
+        
+        domain_dict = {}    # Empty dictionary of cells and endpoints
+
+        for cell in self.cells:
+            for e in cell.endpoints:
+                domain_dict[e] = cell
+                pass
+            pass
+
+        self.domain_dict = domain_dict
+
+        return None
+    """
+
+    def set_scaling(self,N):
+        # Set a scaling factor for the Laplacian
+
+        self.h = (np.pi)/(N-1)
+
+        return None
+    
+    def all_equal(self, iterable):
+        # Check if all elements in an iterable are equal
+
+        g = groupby(iterable)
+
+        return next(g, True) and not next(g, False)
+    
+    def find_scaling(self):
+        # If all cells are of the same length,
+        # calculate the scaling factor for the Laplacian
+
+        N = self.cells[0].N
+
+        N_same = self.all_equal([cell.N for cell in self.cells])
+
+        if N_same == True:
+            self.set_scaling(N)
+            pass
+        else:
+            pass
+
         return None
     
     def construct_indices(self):
         # Assign indices for the complex
         
+        return None
+    
+    """
+    def set_bc(self, end, condition):
+        # Set boundary conditions on a particular edge in the complex
+
+        if condition == "dirichlet":
+            pass
+        elif condition == "neumann":
+            pass
+        elif condition == "robin":
+            pass
+
+        return None
+    """
+
+    def exterior_bc(self, condition):
+        # Set boundary conditions on the exterior of the complex
+
+        cells = self.cells
+
+        self.free_edges = []
+
+        self.exterior_bc = condition
+
+        for cell in cells:
+            for edge in cell.endpoints:
+                if edge not in self.edges_with_bc_appl:
+                    self.free_edges.append((cell,edge))
+                    pass
+                else:
+                    pass
+                pass
+            pass
+
+        return None
+    
+    def glue(self, gluing):
+        # Set gluing to a particular edge in the complex
+
+        #dict = self.domain_dict
+
+        #g = []
+
+        #for e in gluing:
+        #    g.append((dict[e],e))
+        #    pass
+
+        self.gluings.append(gluing)
+
+        return None
+    
+    def gen_lapl(self):
+        # Generate the Laplacian matrix on the glued complex
+
+        # Import domain dictionary
+        #dict = self.domain_dict
+
+        # Generate the Laplacian matrix on the unglued complex
+        self.lapl()
+
+        # Apply the gluing map to the Laplacian matrix
+        for gluing in self.gluings:
+            self.apply_gluing(gluing)
+            pass
+
+        # Apply exterior boundary conditions to the Laplacian matrix
+        if self.exterior_bc == "dirichlet":
+            for e in self.free_edges:
+                (line, end) = e
+                self.apply_dirichlet(line, end)
+                pass
+            pass
+        elif self.exterior_bc == "neumann":
+            pass
+        elif self.exterior_bc == "robin":
+            pass
+        else:
+            pass
+
+        # Remove all zero rows and columns from the Laplacian matrix
+        self.simplify_lapl()
+
         return None
     
     def lapl(self):
@@ -36,7 +172,7 @@ class Complex:
         
         Lapls = tuple([cell.L for cell in cells])
         
-        L = sp.sparse.block_diag((Lapls),format="csr")
+        L = sp.sparse.block_diag((Lapls),format="lil")
         
         self.L = L
 
@@ -46,8 +182,6 @@ class Complex:
     
     def apply_dirichlet(self, line, end):
         # Apply Dirichlet boundary conditions to a particular edge in the complex
-        
-        #self.check_if_lapl_gen()
         
         N = line.N
         L = self.L
@@ -82,11 +216,11 @@ class Complex:
             domain.removed_nodes.append(node)
             pass
         """
-        #self.edges_with_bc_appl.append((domain,edge))
+        self.edges_with_bc_appl.append(end)
         
         return None
     
-    def glue(self,list):
+    def apply_gluing(self,list):
         # Glue together a list of endpoints
         
         if self.lapl_gen == True:
@@ -155,6 +289,11 @@ class Complex:
             L[x] = 0
             L[:,x] = 0
             pass
+
+        for l in list:
+            (line, end) = l
+            self.edges_with_bc_appl.append(end)
+            pass
         
         el.sort()
         
@@ -181,12 +320,12 @@ class Complex:
         
         return None
     
-    def lapl_spectrum(self,h,dps):
+    def lapl_spectrum(self,dps):
         # Calculate the spectrum of a matrix M
-        # Scaling factor h
         # Decimal places to round to is dps
         
         matrix = self.sL
+        h = self.h
     
         #matrix = matrix.astype('float32')
         eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=False)
@@ -195,14 +334,15 @@ class Complex:
         spec.sort()
         return np.round(spec,dps)
     
-    def lapl_solve(self,h,dps):
+    def lapl_solve(self,dps):
         # Calculate the spectrum of a matrix M
         # Scaling factor h
         # Decimal places to round to is dps
         
         self.simplify_lapl()
         matrix = self.sL
-        
+        h = self.h
+
         matrix = matrix.astype('float32')
         matrix.tocsr()
         eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
