@@ -148,9 +148,9 @@ class Complex:
         # Apply exterior boundary conditions to the Laplacian matrix
         if self.exterior_bc == "dirichlet":
             for edge in self.free_edges:
-                line = edge.line
-                end = edge.node
-                self.apply_dirichlet(line, end)
+                #line = edge.line
+                #end = edge.end
+                self.apply_dirichlet(edge)
                 pass
             pass
         elif self.exterior_bc == "neumann":
@@ -185,14 +185,14 @@ class Complex:
     
     def apply_dirichlet(self, endpoint):
         # Apply Dirichlet boundary conditions to a particular edge in the complex
+
+        line = endpoint.line
+        end = endpoint.end
         
         N = line.N
         L = self.L
         cells = self.cells
         el = self.eliminated_vars
-
-        line = endpoint.line
-        end = endpoint.node
         
         nodes_list = list(line.G.nodes())
         #edge_coords = [nodes_list.index(x) for x in end]
