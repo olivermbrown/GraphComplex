@@ -105,7 +105,7 @@ class Complex:
         for cell in cells:
             for edge in cell.endpoints:
                 if edge not in self.edges_with_bc_appl:
-                    self.free_edges.append((cell,edge))
+                    self.free_edges.append(edge)
                     pass
                 else:
                     pass
@@ -140,13 +140,16 @@ class Complex:
 
         # Apply the gluing map to the Laplacian matrix
         for gluing in self.gluings:
+            #g = []
+            #g.append(gluing.line, gluing.node)
             self.apply_gluing(gluing)
             pass
 
         # Apply exterior boundary conditions to the Laplacian matrix
         if self.exterior_bc == "dirichlet":
-            for e in self.free_edges:
-                (line, end) = e
+            for edge in self.free_edges:
+                line = edge.line
+                end = edge.node
                 self.apply_dirichlet(line, end)
                 pass
             pass
@@ -180,13 +183,16 @@ class Complex:
         
         return None
     
-    def apply_dirichlet(self, line, end):
+    def apply_dirichlet(self, endpoint):
         # Apply Dirichlet boundary conditions to a particular edge in the complex
         
         N = line.N
         L = self.L
         cells = self.cells
         el = self.eliminated_vars
+
+        line = endpoint.line
+        end = endpoint.node
         
         nodes_list = list(line.G.nodes())
         #edge_coords = [nodes_list.index(x) for x in end]
@@ -216,7 +222,7 @@ class Complex:
             domain.removed_nodes.append(node)
             pass
         """
-        self.edges_with_bc_appl.append(end)
+        self.edges_with_bc_appl.append(endpoint)
         
         return None
     
@@ -237,7 +243,9 @@ class Complex:
         X = []
         
         for l in list:
-            (line, end) = l
+            line = l.line
+            end = l.node
+            #(line, end) = l
             I.append(cells.index(line))
             X.append(end)
             pass
@@ -261,7 +269,9 @@ class Complex:
         n = len(X)
         
         for l in list:
-            (line, end) = l
+            line = l.line
+            end = l.node
+            #(line, end) = l
             i = list.index(l)
             x = X[i]
             if end == line.start:
@@ -291,8 +301,8 @@ class Complex:
             pass
 
         for l in list:
-            (line, end) = l
-            self.edges_with_bc_appl.append(end)
+            #(line, end) = l
+            self.edges_with_bc_appl.append(l)
             pass
         
         el.sort()

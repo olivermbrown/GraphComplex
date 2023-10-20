@@ -24,10 +24,10 @@ class Line:
         nodes_list = list(self.G.nodes())
         
         endpoints = []
-        self.start = nodes_list[0]
-        endpoints.append(nodes_list[0])
-        self.end = nodes_list[N-1]
-        endpoints.append(nodes_list[N-1])
+        self.start = End(self,nodes_list[0])#nodes_list[0]
+        endpoints.append(self.start)
+        self.end = End(self,nodes_list[N-1])#nodes_list[N-1]
+        endpoints.append(self.end)
         self.endpoints = endpoints
         return None
     
@@ -311,9 +311,9 @@ def plot_state(D, state):
 class End:
     # A class for the ends of a line
 
-    def __init__(self, line, end):
+    def __init__(self, line, node):
         self.line = line
-        self.end = end
+        self.end = node
 
         return None
 
