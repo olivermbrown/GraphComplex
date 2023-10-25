@@ -26,23 +26,6 @@ class Complex:
         self.edges_with_bc_appl = []
         self.gluings = []
         return None
-    
-    """
-    def create_domain_dict(self):
-        # Create a dictionary referencing cells and endpoints
-        
-        domain_dict = {}    # Empty dictionary of cells and endpoints
-
-        for cell in self.cells:
-            for e in cell.endpoints:
-                domain_dict[e] = cell
-                pass
-            pass
-
-        self.domain_dict = domain_dict
-
-        return None
-    """
 
     def set_scaling(self,N):
         # Set a scaling factor for the Laplacian
@@ -78,52 +61,16 @@ class Complex:
         # Assign indices for the complex
         
         return None
-    
-    """
-    def set_bc(self, end, condition):
-        # Set boundary conditions on a particular edge in the complex
-
-        if condition == "dirichlet":
-            pass
-        elif condition == "neumann":
-            pass
-        elif condition == "robin":
-            pass
-
-        return None
-    """
 
     def exterior_bc(self, condition):
         # Set boundary conditions on the exterior of the complex
 
-        cells = self.cells
-
-        self.free_edges = []
-
         self.exterior_bc = condition
-
-        for cell in cells:
-            for edge in cell.endpoints:
-                if edge not in self.edges_with_bc_appl:
-                    self.free_edges.append(edge)
-                    pass
-                else:
-                    pass
-                pass
-            pass
 
         return None
     
     def glue(self, gluing):
         # Set gluing to a particular edge in the complex
-
-        #dict = self.domain_dict
-
-        #g = []
-
-        #for e in gluing:
-        #    g.append((dict[e],e))
-        #    pass
 
         self.gluings.append(gluing)
 
@@ -148,8 +95,6 @@ class Complex:
         # Apply exterior boundary conditions to the Laplacian matrix
         if self.exterior_bc == "dirichlet":
             for edge in self.free_edges:
-                #line = edge.line
-                #end = edge.end
                 self.apply_dirichlet(edge)
                 pass
             pass
@@ -180,6 +125,18 @@ class Complex:
         self.L = L
 
         self.lapl_gen = True
+
+        self.free_edges = []
+
+        for cell in cells:
+            for edge in cell.endpoints:
+                if edge not in self.edges_with_bc_appl:
+                    self.free_edges.append(edge)
+                    pass
+                else:
+                    pass
+                pass
+            pass
         
         return None
     
@@ -244,8 +201,7 @@ class Complex:
         
         for l in list:
             line = l.line
-            end = l.node
-            #(line, end) = l
+            end = l.end
             I.append(cells.index(line))
             X.append(end)
             pass
@@ -270,14 +226,13 @@ class Complex:
         
         for l in list:
             line = l.line
-            end = l.node
-            #(line, end) = l
+            end = l.end
             i = list.index(l)
             x = X[i]
-            if end == line.start:
+            if end == line.start.end:
                 v[x+1] += 1/n
                 pass
-            elif end == line.end:
+            elif end == line.end.end:
                 v[x-1] += 1/n
                 pass
             else:
@@ -301,8 +256,8 @@ class Complex:
             pass
 
         for l in list:
-            #(line, end) = l
             self.edges_with_bc_appl.append(l)
+            self.free_edges.remove(l)
             pass
         
         el.sort()
