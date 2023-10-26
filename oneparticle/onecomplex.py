@@ -25,6 +25,7 @@ class Complex:
         self.find_scaling()
         self.edges_with_bc_appl = []
         self.gluings = []
+        self.solved = False
         return None
 
     def set_scaling(self,N):
@@ -59,6 +60,8 @@ class Complex:
     
     def construct_indices(self):
         # Assign indices for the complex
+
+        # TODO - remove?
         
         return None
 
@@ -78,9 +81,6 @@ class Complex:
     
     def gen_lapl(self):
         # Generate the Laplacian matrix on the glued complex
-
-        # Import domain dictionary
-        #dict = self.domain_dict
 
         # Generate the Laplacian matrix on the unglued complex
         self.lapl()
@@ -152,7 +152,6 @@ class Complex:
         el = self.eliminated_vars
         
         nodes_list = list(line.G.nodes())
-        #edge_coords = [nodes_list.index(x) for x in end]
         
         i = cells.index(line)
         for cell in cells:
@@ -174,11 +173,7 @@ class Complex:
         el.append(end)
         el.sort()
         self.eliminated_vars = el
-        """
-        for node in edge:
-            domain.removed_nodes.append(node)
-            pass
-        """
+
         self.edges_with_bc_appl.append(endpoint)
         
         return None
@@ -297,6 +292,9 @@ class Complex:
         
         spec = (h)**(-1) * np.sqrt(np.abs(eigs))
         spec.sort()
+
+        self.spectrum = spec
+
         return np.round(spec,dps)
     
     def lapl_solve(self,dps):
@@ -313,7 +311,11 @@ class Complex:
         eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
         
         spec = (h)**(-1) * np.sqrt(np.abs(eigvals))
-        #spec.sort()
+
+        self.spectrum = spec
+        self.states = eigvecs
+        self.solved = True
+
         return np.round(spec,dps), eigvecs
     
     def print_eqs(self):
@@ -347,243 +349,39 @@ class Complex:
             pass
         
         return None
+    
+    def plot_states(self, n):
+        # Plot the states of the system
 
-def plot_state(l, state):
-    # Plot a state that solves the Schrodinger equation on wire l
-    
-    N = l.N
-    #pos = nx.spring_layout(D.G)
-    
-    """
-    coords = []
-    for node in l.G:
-        if node not in l.removed_nodes:
-            x = node/N
-            #y = node[1]/N
-            coords.append([x])
+        if self.solved == True:
             pass
         else:
+            self.lapl_solve(2)
             pass
-        pass
-    """
-    
-    # Define coordinates
-    #coords = np.array(coords)
-    coords = np.linspace(0,1,N-1,endpoint=False)
-    
-    # Plot the surface
-    xs = coords[1:]
-    #ys = coords[:,1]
-    
-    # Plot 2d line
-    fig, ax = plt.subplots()
-    #fig, ax = plt.subplots(subplot_kw={"projection": "2d"})
-    state = np.real(state)
-    ax.plot(xs, state)
-    #ax.plot_trisurf(xs, state, vmin=state.min() * 2, cmap=cm.autumn)
-    
-    
-    return plt
+        
+        cells = self.cells
+        states = self.states
+        
+        for line in cells:
+            i = cells.index(line)
+
+            N = line.N
+            coords = np.linspace(0,1,N-1,endpoint=False)
+
+            xs = coords[1:]
+            length = len(xs)
+            state = states[i*length:(i+1)*length,n]
+            state = np.real(state)
+
+            plt.plot(xs, state)
+            plt.xlabel("x")
+            plt.ylabel(r'$\psi$'+str(i)+"(x)")
+            plt.show()
+            pass
+        
+        return None
 
 if __name__ == "__main__":
     # Main
     
-    N = 50 # The length of the line-chain
-    
-    # Scaling factor
-    h = (np.pi)/(N-1)
-    
-    l1 = lineFDM.Line(N)
-    l2 = lineFDM.Line(N)
-    l3 = lineFDM.Line(N)
-    
-    cells = [l1,l2,l3]
-    #cells = [l1,l2]
-    
-    Network = Complex(cells)
-    
-    Network.lapl()
-    
-    print(Network.L)
-    M = Network.L.toarray()
-    print(M)
-    
-    gluings = [(l1,l1.start),(l2,l2.start),(l3,l3.start)]
-    #gluings = [(l1,l1.start),(l2,l2.start)]
-    
-    Network.apply_dirichlet(l1,l1.end)
-    Network.apply_dirichlet(l2,l2.end)
-    Network.apply_dirichlet(l3,l3.end)
-
-    Network.glue(gluings)
-    #print(Network.L)
-    M = Network.L.toarray()
-    #print(M)
-    #print(M[5])
-    #print(M[9])
-    Network.simplify_lapl()
-    SD = Network.sL.toarray()
-    #print(SD)
-    
-    Network.print_eqs()
-    
-    spectrum, states = Network.lapl_solve(h,2)
-
-    print(spectrum)
-    
-    # Choose state to plot
-    n = 3
-    vector = states[:,n]
-    states = np.array_split(vector, 3)
-    
-    for line in cells:
-        i = cells.index(line)
-        plot = plot_state(line, states[i])
-        plot.show()
-        pass
-    
     pass
-    
-
-"""
-def continuity(self,list):
-        
-        # Apply the continuity part of the gluing map to the Laplacian matrix
-
-        L = self.L
-        cells = self.cells
-        removed_nodes = self.removed_nodes
-        
-        I = []
-        X = []
-        
-        for l in list:
-            (line, end) = l
-            I.append(cells.index(line))
-            X.append(end)
-            pass
-        
-        for cell in cells:
-            for i in range (0,len(I)):
-                if cells.index(cell) < I[i]:
-                    X[i] += cell.N
-                    pass
-                else:
-                    pass
-                pass
-            pass
-        
-        for rn in removed_nodes:
-            for x in X:
-                if x > rn:
-                    x -= 1
-                    pass
-                else:
-                    pass
-        
-        X.sort()
-        
-        dim = L.shape[0]
-
-        # Modify Laplacian to incorporate continuity
-        
-        x0 = X[0]
-        for x1 in X[1:]:
-            for row in range (0, dim):
-                if L[row, x1] != 0:
-                    e = L[row, x1]
-                    L[row, x0] = e
-                    L[row, x1] = 0
-                    pass
-                else:
-                    pass
-        
-        for x1 in X[1:]:
-            # Remove rows and columns corresponding to eliminated variables
-            i = x1
-            i -= len(removed_nodes)
-            L = sp.sparse.vstack([L[:i,:],L[i+1:,:]],format='csr')
-            L = sp.sparse.hstack([L[:,:i],L[:,i+1:]],format='csr')
-            removed_nodes.append(x1)
-        
-        self.L = L
-        
-        self.removed_nodes = removed_nodes
-        
-        return None
-    
-    def current(self,list):
-        # Apply the current conservation part of the gluing map to the Laplacian matrix
-        
-        L = self.L
-        cells = self.cells
-        removed_nodes = self.removed_nodes
-        
-        I = []
-        X = []
-        lines = []
-        
-        for l in list:
-            (line, end) = l
-            I.append(cells.index(line))
-            X.append(end)
-            lines.append(line)
-            pass
-        
-        for cell in cells:
-            for i in range (0,len(I)):
-                if cells.index(cell) < I[i]:
-                    X[i] += cell.N
-                    pass
-                else:
-                    pass
-                pass
-            pass
-        
-        # Create vector for current boundary condition
-        
-        dim = L.shape[0]
-        
-        L = L.astype('float32')
-        
-        v = np.zeros(dim)
-        
-        pos = X
-        
-        for rn in removed_nodes:
-            for x in X:
-                if x >= rn:
-                    pos[X.index(x)] -= 1
-                    pass
-                else:
-                    pass
-                pass
-            pass
-        
-        pos.sort()
-        
-        for l in list:
-            (line, end) = l
-            i = list.index(l)
-            s = pos[i]
-            if end == line.start:
-                v[s+1] += 1/3
-                pass
-            elif end == line.end:
-                v[s-1] += 1/3
-                pass
-            else:
-                pass
-            pass
-        
-        x0 = pos[0]
-        
-        L[x0] = v
-        
-        L = sp.sparse.vstack([L[:x0,:],L[x0+1:,:]],format='csr')
-        L = sp.sparse.hstack([L[:,:x0],L[:,x0+1:]],format='csr')
-        
-        self.L = L
-        
-        return None
-"""

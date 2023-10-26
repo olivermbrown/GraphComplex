@@ -45,6 +45,6 @@ if __name__=="__main__":
     spectrum.sort()
     print(spectrum)
 
-    onecomplex.plot_state(states[0])
+    Y.plot_states(0)
 
     pass
