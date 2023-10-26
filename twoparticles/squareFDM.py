@@ -131,7 +131,6 @@ class Domain:
         
         return None
     
-    
     def apply_dirichlet(self,edge):
         # Apply Dirichlet boundary conditions to a particular edge
         
@@ -349,6 +348,16 @@ class Domain:
         self.L = L
         
         return None
+    
+class Edge:
+    # A class for the edge of a two-particle domain
+
+    def __init__(self, domain, edge_nodes):
+        self.domain = domain
+        self.edge = edge_nodes
+
+        return None
+
 
 def lapl_spectrum(matrix,h,dps):
     # Calculate the spectrum of a matrix M
