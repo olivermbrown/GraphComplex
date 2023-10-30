@@ -1,5 +1,5 @@
 """
-Code to solve the Laplacian on the distinguishable configuration space of two particles on the Y graph
+Code to solve the Laplacian on the distinguishable configuration space of two particles on two wires
 """
 
 import numpy as np

@@ -39,39 +39,45 @@ class Domain:
         nodes_list = list(self.G.nodes())
         
         # Find the nodes on the first x-axis
-        x0 = []
+        x0_nodes = []
         for x in range(1,N-1):
-            x0.append(nodes_list[x])
+            x0_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the first y-axis
-        y0 = []
+        y0_nodes = []
         for x in range(N,(N**2)-N,N):
-            y0.append(nodes_list[x])
+            y0_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the opposite x-axis
-        x1 = []
+        x1_nodes = []
         for x in range((N**2)-N+1,(N**2)-1):
-            x1.append(nodes_list[x])
+            x1_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the opposite y-axis
-        y1 = []
+        y1_nodes = []
         for x in range(2*N-1,N**2-1,N):
-            y1.append(nodes_list[x])
+            y1_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes along the diagonal x=y
-        diag = []
+        diag_nodes = []
         for x in range(N+1,(N**2 - 1), N + 1):
-            diag.append(nodes_list[x])
+            diag_nodes.append(nodes_list[x])
             pass
         
-        x0inv = x0[::-1]
-        y0inv = y0[::-1]
-        x1inv = x1[::-1]
-        y1inv = y1[::-1]
+        #x0inv = x0[::-1]
+        #y0inv = y0[::-1]
+        #x1inv = x1[::-1]
+        #y1inv = y1[::-1]
+
+        x0 = Edge(self,x0_nodes)
+        y0 = Edge(self,y0_nodes)
+        x1 = Edge(self,x1_nodes)
+        y1 = Edge(self,y1_nodes)
+        diag = Edge(self,diag_nodes)
         
         self.edges.append(x0)
         self.edges.append(y0)
@@ -85,17 +91,17 @@ class Domain:
         self.x1 = x1
         self.y1 = y1
         self.diag = diag
-        self.x0inv = x0inv
-        self.y0inv = y0inv
-        self.x1inv = x1inv
-        self.y1inv = y1inv
+        #self.x0inv = x0inv
+        #self.y0inv = y0inv
+        #self.x1inv = x1inv
+        #self.y1inv = y1inv
         
         return None
     
-    def split_domain(self,condition):
+    def split_domain(self):
         
         self.split = True
-        self.split_condition = condition
+        #self.split_condition = condition # This is not needed
         
         return None
     
