@@ -111,7 +111,12 @@ class Complex:
         # Apply diagonal boundary conditions to the Laplacian matrix
         if self.diagonal_bc == "dirichlet":
             for edge in self.diagonal:
-                self.apply_dirichlet(edge)
+                if edge.domain.split == True:
+                    self.apply_dirichlet(edge)
+                    pass
+                else:
+                    pass
+                pass
             pass
         elif self.diagnonal_bc == "neumann":
             pass
@@ -185,12 +190,13 @@ class Complex:
         
         return None
     
-    def get_edge_coords(self,edge):
+    def get_edge_coords(self,boundary):
         # Get the coordinates in the complex of the locations of nodes on a particular edge
         
         cells = self.cells
 
-        domain = edge.domain
+        domain = boundary.domain
+        edge = boundary.edge
         
         nodes_list = list(domain.G.nodes())
         edge_coords = [nodes_list.index(x) for x in edge]
@@ -222,8 +228,9 @@ class Complex:
         blocks = []
         edge_coords = []
         
-        for l in gl:
-            (domain, edge) = l
+        for boundary in gl:
+            domain = boundary.domain
+            edge = boundary.edge
             nodes_list = list(domain.G.nodes())
             locs.append([nodes_list.index(x) for x in nodes_list])
             blocks.append(cells.index(domain))
@@ -256,13 +263,14 @@ class Complex:
         
         n = len(gl)
         
-        for l in gl:
-            (domain, edge) = l
-            i = gl.index(l)
+        for boundary in gl:
+            i = gl.index(boundary)
+            domain = boundary.domain
+            edge = boundary.edge
             for x in edge_coords[i]:
                 j = edge_coords[i].index(x)
                 #
-                if edge == domain.x0 or edge == domain.x0inv:
+                if boundary == domain.x0:# or edge == domain.x0inv:
                     s = x + domain.N
                     if s not in el:
                         v[j,s] += 1/n
@@ -270,7 +278,7 @@ class Complex:
                     else:
                         pass
                     pass
-                elif edge == domain.y0 or edge == domain.y0inv:
+                elif boundary == domain.y0:# or edge == domain.y0inv:
                     s = x + 1
                     if s not in el:
                         v[j,s] += 1/n
@@ -278,7 +286,7 @@ class Complex:
                     else:
                         pass
                     pass
-                elif edge == domain.x1 or edge == domain.x1inv:
+                elif boundary == domain.x1:# or edge == domain.x1inv:
                     s = x - domain.N
                     if s not in el:
                         v[j,s] += 1/n
@@ -286,7 +294,7 @@ class Complex:
                     else:
                         pass
                     pass
-                elif edge == domain.y1 or edge == domain.y1inv:
+                elif boundary == domain.y1:# or edge == domain.y1inv:
                     s = x - 1
                     if s not in el:
                         v[j,s] += 1/n
@@ -294,7 +302,7 @@ class Complex:
                     else:
                         pass
                     pass
-                elif edge == domain.hyp:
+                elif boundary == domain.diag:
                     raise Exception
                 else:
                     pass
@@ -303,13 +311,14 @@ class Complex:
         
         # Generate list of all nodes on exterior boundary
         ext = []
-        for l in gl:
-            (domain, edge) = l
+        for boundary in gl:
+            domain = boundary.domain
+            edge = boundary.edge
             for e in domain.edges:
                 if e == domain.diag:
                     pass
                 else:
-                    ext += self.get_edge_coords(domain, e)
+                    ext += self.get_edge_coords(e)
                     pass
                 pass
             pass
@@ -333,8 +342,9 @@ class Complex:
         # Apply gluing to the Laplacian matrix
         
         for boundary in gl:
-            (domain, edge) = boundary
-            i = gl.index(l)
+            i = gl.index(boundary)
+            domain = boundary.domain
+            edge = boundary.edge
             for x in edge_coords[i]:
                 j = edge_coords[i].index(x)
                 
@@ -348,8 +358,9 @@ class Complex:
                 el.append(x)
                 L[x] = 0
                 L[:,x] = 0
-                
-            self.edges_with_bc_appl.append((domain,edge))
+                pass
+            
+            self.edges_with_bc_appl.append(boundary)
             self.free_edges.remove(boundary)
             pass
         
@@ -573,69 +584,7 @@ class Complex:
         self.edges_with_bc_appl.append((domain,edge))
         
         return None
-    """
-    def exterior_bc(self,condition):
-        # Apply an boundary condition to every edge on the exterior - TODO
-        
-        cells = self.cells
-        
-        for cell in cells:
-            for edge in cell.edges:
-                if isinstance(cell, squareFDM.Domain) and edge != cell.diag:
-                    if (cell, edge) not in self.edges_with_bc_appl:
-                        if condition == "dirichlet":
-                            self.apply_dirichlet(cell,edge)
-                            pass
-                        elif condition == "neumann":
-                            self.apply_neumann(cell,edge)
-                            pass
-                        elif condition == "robin":
-                            self.apply_robin(cell,edge,1,1)
-                            pass
-                        else:
-                            pass
-                        pass
-                    else:
-                        pass
-                    pass
-                else:
-                    pass
-                pass
-            pass
-        
-        return None
     
-    def diagonal_bc(self,condition):
-        # Apply an boundary condition to every edge on the exterior - TODO
-        
-        cells = self.cells
-        
-        for cell in cells:
-            if isinstance(cell, squareFDM.Domain) and cell.split == True:
-                if (cell, cell.diag) not in self.edges_with_bc_appl:
-                    if condition == "dirichlet":
-                        self.apply_dirichlet(cell,cell.diag)
-                        pass
-                    elif condition == "neumann":
-                        #self.apply_neumann_diag(cell,cell.diag) TODO
-                        pass
-                    elif condition == "robin":
-                        #self.apply_robin_diag(cell,cell.diag,1,1) TODO
-                        pass
-                    else:
-                        pass
-                    
-                    self.edges_with_bc_appl.append((cell,cell.diag))
-                    pass
-                else:
-                    pass
-                pass
-            else:
-                pass
-            pass
-        
-        return None
-    """
     def lapl_spectrum(self,h,dps,N_eigs):
         # Calculate the spectrum of a matrix M
         # Scaling factor h
