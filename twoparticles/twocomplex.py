@@ -24,6 +24,7 @@ class Complex:
         self.gluings = []
         self.find_edges()
         self.edges_with_bc_appl = []
+        self.solved = False
         return None
     
     def find_corners(self):
@@ -584,7 +585,7 @@ class Complex:
         self.edges_with_bc_appl.append((domain,edge))
         
         return None
-    
+
     def lapl_spectrum(self,h,dps,N_eigs):
         # Calculate the spectrum of a matrix M
         # Scaling factor h
@@ -601,7 +602,7 @@ class Complex:
         spec.sort()
         return np.round(spec,dps)
     
-    def lapl_solve(self,h,dps):
+    def lapl_solve(self,h,dps,N_eigs):
         # Calculate the spectrum of a matrix M
         # Scaling factor h
         # Decimal places to round to is dps
@@ -611,10 +612,16 @@ class Complex:
         
         matrix = matrix.astype('float32')
         matrix.tocsr()
-        eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=20,return_eigenvectors=True)
+        eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=True)
         
         spec = (h)**(-2) * np.abs(eigvals)
-        spec.sort()
+        #spec.sort()
+
+        self.spectrum = np.round(spec,dps)
+        self.states = eigvecs
+
+        self.solved = True
+
         return np.round(spec,dps), eigvecs
     
     def print_eqs(self):
@@ -645,6 +652,69 @@ class Complex:
             print("Equation " + str(c) + ":")
             print(row)
             c += 1
+            pass
+        
+        return None
+    
+    def construct_coords(self,cell):
+        # Construct the non-eliminated coordinate system on each cell
+
+        N = cell.N
+
+        x = np.linspace(0,1,N-2,endpoint=False)
+        y = np.linspace(0,1,N-2,endpoint=False)
+
+        xx, yy = np.meshgrid(x,y)
+        grid = np.array((xx.ravel(), yy.ravel())).T
+
+        if cell.split == True:
+            # Remove the diagonal from the coordinate grid
+            diag = np.stack((x,x),axis=1)
+            indices = np.where((grid==diag[:,None]).all(-1))[1]
+            coords = np.delete(grid,indices,axis=0)
+            pass
+        else:
+            coords = grid
+            pass
+        
+        cell.non_elim_coords = coords
+        cell.num_non_elim = len(coords)
+
+        return None
+    
+    def plot_states(self, n):
+        # Plot the states of the system
+
+        if self.solved == True:
+            pass
+        else:
+            self.lapl_solve(2,dps=2)
+            pass
+        
+        cells = self.cells
+        states = self.states
+        
+        c = 0
+        for cell in cells:
+            i = cells.index(cell)
+
+            self.construct_coords(cell)
+
+            coords = cell.non_elim_coords
+            length = cell.num_non_elim
+
+            state = states[c:length+c,n]
+            state = np.real(state)
+
+            ax = plt.figure().add_subplot(projection='3d')
+
+            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.autumn)
+            #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
+
+            #plt.xlabel("x")
+            #plt.ylabel(r'$\psi$'+str(i)+"(x)")
+            plt.show()
+            c+=length
             pass
         
         return None

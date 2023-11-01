@@ -50,7 +50,7 @@ def twowirestwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 50 # The length of a wire
+    N = 20 # The length of a wire
     
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -59,10 +59,16 @@ if __name__ == "__main__":
 
     #TwoWires.print_eqs()
 
-    spectrum = TwoWires.lapl_spectrum(h,2,20)
-    print(spectrum)
-    print("Scaling factor:")
-    print(5/spectrum[0])
-    print(4*spectrum)
+    #spectrum = TwoWires.lapl_spectrum(h,2,20)
+    #print(spectrum)
+    #print("Scaling factor:")
+    #print(5/spectrum[0])
+    #print(4*spectrum)
+
+    TwoWires.lapl_solve(h,2,50)
+    print(TwoWires.spectrum)
+
+    # Plot the states
+    TwoWires.plot_states(0)
     
     pass

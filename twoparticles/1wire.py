@@ -37,13 +37,15 @@ def onewiretwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 100 # The length of a wire
+    N = 20 # The length of a wire
     
     OneWire = onewiretwoparticles(N)
 
     h = (np.pi)/(N-1)
 
-    spectrum = OneWire.lapl_spectrum(h,2,20)
-    print(spectrum)
+    OneWire.lapl_solve(h,2,50)
+    print(OneWire.spectrum)
 
+    # Plot the states
+    OneWire.plot_states(0)
     pass
