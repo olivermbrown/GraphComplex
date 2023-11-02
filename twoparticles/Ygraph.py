@@ -65,7 +65,7 @@ def twoparticlesYgraph(N):
 if __name__ == "__main__":
     # Main
     
-    N = 100 # The length of a wire
+    N = 10 # The length of a wire
 
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -74,7 +74,13 @@ if __name__ == "__main__":
 
     #Ygraph.print_eqs()
 
-    spectrum = Ygraph.lapl_spectrum(h,2,50)
-    print(spectrum)
+    #spectrum = Ygraph.lapl_spectrum(h,2,50)
+    #print(spectrum)
+
+    Ygraph.lapl_solve(h,2,50)
+    print(Ygraph.spectrum)
+
+    # Plot the states
+    Ygraph.plot_states(2)
     
     pass
