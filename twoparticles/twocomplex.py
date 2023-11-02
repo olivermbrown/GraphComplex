@@ -708,11 +708,15 @@ class Complex:
 
             ax = plt.figure().add_subplot(projection='3d')
 
-            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.autumn)
+            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.plasma)
             #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
+            indices = cell.indices
 
-            #plt.xlabel("x")
-            #plt.ylabel(r'$\psi$'+str(i)+"(x)")
+            plt.title("D"+str(indices))
+            ax.set_xlabel("x_e"+str(indices[0]))
+            ax.set_ylabel("y_e"+str(indices[1]))
+            ax.zaxis.set_rotate_label(False)
+            ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
             plt.show()
             c+=length
             pass

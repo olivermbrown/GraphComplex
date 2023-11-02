@@ -25,6 +25,10 @@ def twowirestwoparticles(N):
     D22 = squareFDM.Domain(N)
     D11.split_domain()
     D22.split_domain()
+    D11.indices = (1,1)
+    D12.indices = (1,2)
+    D21.indices = (2,1)
+    D22.indices = (2,2)
 
     cells = [D11,D12,D21,D22]
 

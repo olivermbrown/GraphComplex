@@ -21,6 +21,7 @@ class Domain:
         self.removed_nodes = []
         self.non_elim_coords = []
         self.num_non_elim = None
+        self.indices = None
         return None
     
     def find_corners(self):

@@ -22,6 +22,8 @@ def onewiretwoparticles(N):
       # Create the domain
       D11 = squareFDM.Domain(N)
       D11.split_domain()
+
+      D11.indices = (1,1)
       
       cells = [D11]
       
@@ -37,7 +39,7 @@ def onewiretwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 30 # The length of a wire
     
     OneWire = onewiretwoparticles(N)
 
