@@ -633,6 +633,8 @@ class Complex:
         L = self.L
         
         dim = L.shape[0]
+
+        N = self.cells[0].N
         
         els = []
         
@@ -652,6 +654,10 @@ class Complex:
             print("Equation " + str(c) + ":")
             print(row)
             c += 1
+            if c % N**2 == 0:
+                # Wait for user input every 100 equations
+                input("Press Enter to continue...")
+                pass
             pass
         
         return None
@@ -708,7 +714,7 @@ class Complex:
 
             ax = plt.figure().add_subplot(projection='3d')
 
-            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.plasma)
+            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.inferno)
             #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
             indices = cell.indices
 
@@ -721,6 +727,72 @@ class Complex:
             c+=length
             pass
         
+        return None
+    
+    def bosonic_projection(self, n):
+        # Project the nth eigenstate onto the bosonic subspace
+
+        if self.solved == True:
+            pass
+        else:
+            self.lapl_solve(2,dps=2)
+            pass
+
+        cells = self.cells
+        states = self.states
+
+        # Find cells corresponding to the same domains in the indistinguishable configuration space
+        # and sum the states on those cells
+
+        bosonic_states = []
+
+        for cell in cells:
+            i = cells.index(cell)
+            if isinstance(cell, squareFDM.Domain):
+                for cell2 in cells:
+                    j = cells.index(cell2)
+                    if isinstance(cell2, squareFDM.Domain):
+                        if cell.indices[0,1] == cell2.indices[0,1]:
+                            states[i] += states[j]
+                            pass
+                        else:
+                            pass
+                        pass
+                    else:
+                        pass
+                    pass
+                pass
+            else:
+                pass
+            pass
+
+        c = 0
+        for cell in cells:
+            i = cells.index(cell)
+
+            self.construct_coords(cell)
+
+            coords = cell.non_elim_coords
+            length = cell.num_non_elim
+
+            state = states[c:length+c,n]
+            state = np.real(state)
+
+            ax = plt.figure().add_subplot(projection='3d')
+
+            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.inferno)
+            #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
+            indices = cell.indices
+
+            plt.title("D"+str(indices))
+            ax.set_xlabel("x_e"+str(indices[0]))
+            ax.set_ylabel("y_e"+str(indices[1]))
+            ax.zaxis.set_rotate_label(False)
+            ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
+            plt.show()
+            c+=length
+            pass
+
         return None
 
 

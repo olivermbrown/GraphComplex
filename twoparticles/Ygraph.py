@@ -74,7 +74,7 @@ def twoparticlesYgraph(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 50 # The length of a wire
 
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -87,9 +87,10 @@ if __name__ == "__main__":
     #print(spectrum)
 
     Ygraph.lapl_solve(h,2,50)
-    print(Ygraph.spectrum)
+    print("Unsorted eigenvalues = " + str(Ygraph.spectrum))
+    print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(0)
+    Ygraph.plot_states(10)
     
     pass
