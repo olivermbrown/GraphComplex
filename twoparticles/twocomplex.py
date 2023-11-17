@@ -239,7 +239,7 @@ class Complex:
             pass
         
         for cell in cells:
-            for block in blocks:
+            for block in list(set(blocks)):
                 i = blocks.index(block)
                 if cells.index(cell) < block:
                     s = np.array(locs[i])
@@ -728,72 +728,24 @@ class Complex:
             pass
         
         return None
-    
-    def bosonic_projection(self, n):
-        # Project the nth eigenstate onto the bosonic subspace
 
-        if self.solved == True:
-            pass
-        else:
-            self.lapl_solve(2,dps=2)
-            pass
+class ConfigurationSpace:
+    # A class for the configuration space of two particles on a network of wires
 
-        cells = self.cells
-        states = self.states
+    def __init__(self, complx):
 
-        # Find cells corresponding to the same domains in the indistinguishable configuration space
-        # and sum the states on those cells
+        self.covering_cells = complx.cells
 
-        bosonic_states = []
-
-        for cell in cells:
-            i = cells.index(cell)
-            if isinstance(cell, squareFDM.Domain):
-                for cell2 in cells:
-                    j = cells.index(cell2)
-                    if isinstance(cell2, squareFDM.Domain):
-                        if cell.indices[0,1] == cell2.indices[0,1]:
-                            states[i] += states[j]
-                            pass
-                        else:
-                            pass
-                        pass
-                    else:
-                        pass
-                    pass
-                pass
-            else:
-                pass
-            pass
-
-        c = 0
-        for cell in cells:
-            i = cells.index(cell)
-
-            self.construct_coords(cell)
-
-            coords = cell.non_elim_coords
-            length = cell.num_non_elim
-
-            state = states[c:length+c,n]
-            state = np.real(state)
-
-            ax = plt.figure().add_subplot(projection='3d')
-
-            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.inferno)
-            #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
-            indices = cell.indices
-
-            plt.title("D"+str(indices))
-            ax.set_xlabel("x_e"+str(indices[0]))
-            ax.set_ylabel("y_e"+str(indices[1]))
-            ax.zaxis.set_rotate_label(False)
-            ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
-            plt.show()
-            c+=length
-            pass
+        self.identify_cells()
 
         return None
+    
+    def identify_cells(self):
+        # Define domains in the configuration space and identify cells in the complex with these domains
+        # TODO
+
+        return None
+
 
 
 

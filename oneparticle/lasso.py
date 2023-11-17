@@ -1,5 +1,5 @@
 """
-Code to solve the Laplacian on a two glued wires using the finite difference method.
+Code to solve the Laplacian on a the lasso graph using the finite difference method.
 """
 
 import matplotlib.pyplot as plt
@@ -22,7 +22,7 @@ def oneparticletwowires(N):
     Network.exterior_bc("dirichlet")
 
     # Glue the two wires together
-    gluing = [l1.end, l2.start]
+    gluing = [l1.end, l2.start, l2.end]
     Network.glue(gluing)
 
     Network.gen_lapl()
@@ -33,11 +33,11 @@ if __name__=="__main__":
     # Main
     
     # Define length of wire
-    N = 100
+    N = 150
 
     twowires = oneparticletwowires(N)
 
-    spectrum, states = twowires.lapl_solve(2,n_eigs=30)
+    spectrum, states = twowires.lapl_solve(2,n_eigs=50)
 
     spectrum.sort()
     print(spectrum)

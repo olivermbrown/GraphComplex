@@ -133,6 +133,102 @@ def twoparticlesYgraph2cover(N):
     return Network
 """
 
+def bosonic_projection(Complex, n):
+        # Project the nth eigenstate onto the bosonic subspace
+
+        if Complex.solved == True:
+            pass
+        else:
+            Complex.lapl_solve(2,dps=2)
+            pass
+
+        cells = Complex.cells
+        states = Complex.states
+
+        # Find coordinates in the complex of each cell
+        state_components = []
+        c = 0
+        for cell in cells:
+            
+            Complex.construct_coords(cell)
+
+            length = len(cell.non_elim_coords)
+
+            state_components.append(states[c:length+c,n])
+
+            c += length
+            pass
+
+        #state_components = np.vstack(state_components)
+
+        # Construct the bosonic state
+        bosonic_state = np.zeros(len(states[n]))
+
+        for cell in cells:
+            i = cells.index(cell)
+            if cell.split == True:
+                for cell2 in cells:
+                    j = cells.index(cell2)
+                    if cell.indices[0:2] == cell2.indices[0:2] and cell != cell2 and cell2.split == True:
+                        state_components[i] += state_components[j]
+                        pass
+                    elif cell.indices[0:2] == tuple(reversed(cell2.indices[0:2])) and cell != cell2 and cell2.split == True:
+                        state_components[i] += state_components[j]
+                        pass
+                    else:
+                        pass
+                    pass
+                pass
+            else:
+                for cell2 in cells:
+                    j = cells.index(cell2)
+                    if cell.indices[0:2] == cell2.indices[0:2] and cell != cell2 and cell2.split == False:
+                        state_components[i] += state_components[j]
+                        pass
+                    elif cell.indices[0:2] == tuple(reversed(cell2.indices[0:2])) and cell != cell2 and cell2.split == False:
+                        state_components[i] += state_components[j]
+                        pass
+                    else:
+                        pass
+                    pass
+                pass
+            pass
+
+        # Find cells corresponding to the same domains in the indistinguishable configuration space
+        # and sum the states on those cells
+
+        bosonic_states = []
+
+        c = 0
+        for cell in cells:
+            i = cells.index(cell)
+
+            Complex.construct_coords(cell)
+
+            coords = cell.non_elim_coords
+            length = cell.num_non_elim
+
+            #state = state_components[c:length+c]
+            state = state_components[i]
+            state = np.real(state)
+
+            ax = plt.figure().add_subplot(projection='3d')
+
+            ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.inferno)
+            #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
+            indices = cell.indices
+
+            plt.title("D"+str(indices))
+            ax.set_xlabel("x_e"+str(indices[0]))
+            ax.set_ylabel("y_e"+str(indices[1]))
+            ax.zaxis.set_rotate_label(False)
+            ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
+            plt.show()
+            c+=length
+            pass
+
+        return None
+
 def twoparticlesYgraph2cover(N):
     # Evaluate the spectrum of the Laplacian on the distinguishable configuration space of two particles on the Y graph
 
@@ -227,7 +323,7 @@ def twoparticlesYgraph2cover(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 10 # The length of a wire
 
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -244,6 +340,9 @@ if __name__ == "__main__":
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(1)
+    #Ygraph.plot_states(3)
+
+    # Project the states onto the bosonic subspace
+    bosonic_projection(Ygraph,1)
     
     pass
