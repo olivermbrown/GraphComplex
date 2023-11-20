@@ -728,6 +728,22 @@ class Complex:
             pass
         
         return None
+    
+class FundamentalDomain(squareFDM.Domain):
+
+    def __init__(self, domain):
+
+        self = domain
+
+        self.associated_cells = []
+
+        return None
+    
+    def associate(self, cell):
+
+        self.associated_cells.append(cell)
+
+        return None
 
 class ConfigurationSpace:
     # A class for the configuration space of two particles on a network of wires
@@ -736,16 +752,43 @@ class ConfigurationSpace:
 
         self.covering_cells = complx.cells
 
+        self.find_fundamental_domains()
+
         self.identify_cells()
 
         return None
     
-    def identify_cells(self):
+    def find_fundamental_domains(self):
         # Define domains in the configuration space and identify cells in the complex with these domains
         # TODO
 
-        return None
+        covering_cells = self.covering_cells
 
+        fundamental_domains = []
+
+        for cell in covering_cells:
+            if cell.split == True:
+                if cell.indices[2] == 0:
+                    fundamental_domains.append(FundamentalDomain(cell))
+                    pass
+                else:
+                    pass
+            elif cell.split == False:
+                if cell.indices[0] < cell.indices[1] and cell.indices[2] == 0:
+                    fundamental_domains.append(FundamentalDomain(cell))
+                    pass
+                pass
+            else:
+                raise Exception
+                pass
+            pass
+
+        self.domains = fundamental_domains
+
+        return None
+    
+    def identify_cells(self):
+        return None
 
 
 
