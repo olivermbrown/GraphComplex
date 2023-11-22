@@ -142,6 +142,9 @@ class Complex:
         # Remove all zero rows and columns from the Laplacian matrix
         self.simplify_lapl()
 
+        # Set the non-eliminated coordinates on each cell in the complex
+        self.set_non_elim_cell_coords()
+
         return None
 
     def lapl(self):
@@ -192,7 +195,7 @@ class Complex:
         return None
     
     def get_edge_coords(self,boundary):
-        # Get the coordinates in the complex of the locations of nodes on a particular edge
+        # Get the locations in the complex of the locations of nodes on a particular edge
         
         cells = self.cells
 
@@ -214,6 +217,52 @@ class Complex:
             pass
         
         return edge_coords
+    
+    def get_cell_coords(self, domain):
+        # Get the locations in the complex of the locations of nodes on a particular cell
+
+        cells = self.cells
+
+        cell_coords = list(range(0,domain.G.number_of_nodes()))
+
+        for cell in cells:
+            i = cells.index(domain)
+            if cells.index(cell) < i:
+                t = np.array(cell_coords)
+                t += cell.G.number_of_nodes()
+                cell_coords = t.tolist()
+                pass
+            else:
+                pass
+            pass
+
+        return cell_coords
+    
+    def get_non_elim_cell_coords(self, domain):
+        # Get the locations in the complex of the non-eliminated nodes on a particular cell
+
+        coords = self.get_cell_coords(domain)
+
+        el = self.eliminated_vars
+
+        el_set = set(el)
+
+        # Remove eliminated nodes from the coordinate list
+        non_elim_nodes = [element for element in coords if element not in el_set]
+
+        return non_elim_nodes
+    
+    def set_non_elim_cell_coords(self):
+        # Set the non-eliminated coordinates on each cell in the complex
+
+        cells = self.cells
+
+        for cell in cells:
+            non_elim_nodes = self.get_non_elim_cell_coords(cell)
+            cell.non_elim_nodes = non_elim_nodes
+            pass
+
+        return None
     
     def apply_gluing(self,gl):
         # Glue together a list of endpoints
@@ -622,6 +671,8 @@ class Complex:
 
         self.solved = True
 
+        self.identify_states_with_cells()
+
         return np.round(spec,dps), eigvecs
     
     def print_eqs(self):
@@ -660,6 +711,40 @@ class Complex:
                 pass
             pass
         
+        return None
+    
+    def identify_states_with_cells(self):
+        # Identify the components of the solved eigenstates with each cell in the complex
+
+        cells = self.cells
+
+        if self.solved == True:
+            pass
+        else:
+            h = (np.pi)/(cells[0].N - 1)
+            self.lapl_solve(h,2,dps=2)
+            pass
+
+        states = self.states
+
+        i = 0
+        for cell in cells:
+
+            self.construct_coords(cell)
+            l = cell.num_non_elim
+            if cell.split == True:
+                cell.eigenstates = states[i:i+l,:]
+                pass
+            elif cell.split == False:
+                cell.eigenstates = states[i:i+l,:]
+                pass
+            else:
+                raise Exception
+                pass
+            i += l
+            pass
+
+
         return None
     
     def construct_coords(self,cell):
@@ -709,7 +794,8 @@ class Complex:
             coords = cell.non_elim_coords
             length = cell.num_non_elim
 
-            state = states[c:length+c,n]
+            #state = states[c:length+c,n]
+            state = cell.eigenstates[:,n]
             state = np.real(state)
 
             ax = plt.figure().add_subplot(projection='3d')
@@ -727,67 +813,6 @@ class Complex:
             c+=length
             pass
         
-        return None
-    
-class FundamentalDomain(squareFDM.Domain):
-
-    def __init__(self, domain):
-
-        self = domain
-
-        self.associated_cells = []
-
-        return None
-    
-    def associate(self, cell):
-
-        self.associated_cells.append(cell)
-
-        return None
-
-class ConfigurationSpace:
-    # A class for the configuration space of two particles on a network of wires
-
-    def __init__(self, complx):
-
-        self.covering_cells = complx.cells
-
-        self.find_fundamental_domains()
-
-        self.identify_cells()
-
-        return None
-    
-    def find_fundamental_domains(self):
-        # Define domains in the configuration space and identify cells in the complex with these domains
-        # TODO
-
-        covering_cells = self.covering_cells
-
-        fundamental_domains = []
-
-        for cell in covering_cells:
-            if cell.split == True:
-                if cell.indices[2] == 0:
-                    fundamental_domains.append(FundamentalDomain(cell))
-                    pass
-                else:
-                    pass
-            elif cell.split == False:
-                if cell.indices[0] < cell.indices[1] and cell.indices[2] == 0:
-                    fundamental_domains.append(FundamentalDomain(cell))
-                    pass
-                pass
-            else:
-                raise Exception
-                pass
-            pass
-
-        self.domains = fundamental_domains
-
-        return None
-    
-    def identify_cells(self):
         return None
 
 

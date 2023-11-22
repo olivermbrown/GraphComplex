@@ -12,6 +12,7 @@ from matplotlib import cm
 
 import squareFDM
 import twocomplex
+import configspace
 """
 def twoparticlesYgraph2cover(N):
     # Evaluate the spectrum of the Laplacian on the double cover of the distinguishable configuration space of two particles on the Y graph
@@ -340,9 +341,13 @@ if __name__ == "__main__":
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    #Ygraph.plot_states(3)
+    Ygraph.plot_states(0)
 
     # Project the states onto the bosonic subspace
-    bosonic_projection(Ygraph,1)
+    #bosonic_projection(Ygraph,1)
+    Configs = configspace.ConfigurationSpace(Ygraph)
+
+    Configs.bosonic_projection()
+    Configs.plot_projected_wavefunction(0)
     
     pass

@@ -20,8 +20,10 @@ class Domain:
         self.find_edges()
         self.removed_nodes = []
         self.non_elim_coords = []
+        self.non_elim_nodes = []
         self.num_non_elim = None
         self.indices = None
+        self.eigenstates = None
         return None
     
     def find_corners(self):
