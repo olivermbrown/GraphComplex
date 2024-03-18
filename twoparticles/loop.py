@@ -1,5 +1,5 @@
 """
-Code to solve the Laplacian on the distinguishable configuration space of two particles on a single wire
+Code to solve the Laplacian on the distinguishable configuration space of two particles on a loop
 """
 
 import numpy as np
@@ -13,7 +13,7 @@ from matplotlib import cm
 import squareFDM
 import twocomplex
 
-def onewiretwoparticles(N):
+def looptwoparticles(N):
       # Create the network with two particles on a single wire
       
       # Scaling factor
@@ -28,9 +28,15 @@ def onewiretwoparticles(N):
       cells = [D11]
       
       Network = twocomplex.Complex(cells)
+
+      gluingA = [D11.x0, D11.x1]
+      gluingB = [D11.y0, D11.y1]
+
+      Network.glue(gluingA)
+      Network.glue(gluingB)
       
       Network.diagonal_bc("dirichlet")
-      Network.exterior_bc("dirichlet")
+      #Network.exterior_bc("dirichlet")
       
       Network.gen_lapl()
       
@@ -39,9 +45,9 @@ def onewiretwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 30 # The length of a wire
+    N = 50 # The length of a wire
     
-    OneWire = onewiretwoparticles(N)
+    OneWire = looptwoparticles(N)
 
     h = (np.pi)/(N-1)
 
@@ -49,5 +55,5 @@ if __name__ == "__main__":
     print(OneWire.spectrum)
 
     # Plot the states
-    OneWire.plot_states(1)
+    OneWire.plot_states(0)
     pass
