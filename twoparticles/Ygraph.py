@@ -86,11 +86,11 @@ if __name__ == "__main__":
     #spectrum = Ygraph.lapl_spectrum(h,2,50)
     #print(spectrum)
 
-    Ygraph.lapl_solve(h,2,50)
+    Ygraph.lapl_solve(h,3,50)
     print("Unsorted eigenvalues = " + str(Ygraph.spectrum))
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(10)
+    Ygraph.plot_states(0)
     
     pass

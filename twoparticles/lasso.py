@@ -54,7 +54,7 @@ def lassotwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 50 # The length of a wire
     
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -71,6 +71,11 @@ if __name__ == "__main__":
 
     Lasso.lapl_solve(h,2,50)
     print(Lasso.spectrum)
+
+    spectrum = Lasso.spectrum
+    print("Scaling factor:")
+    print(5/spectrum[1])
+    print(5/spectrum[1]*spectrum)
 
     # Plot the states
     Lasso.plot_states(0)
