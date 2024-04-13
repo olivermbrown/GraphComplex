@@ -108,11 +108,51 @@ class ConfigurationSpace:
 
         for domain in domains:
             if domain.split == True:
-                # TODO
-                domain.bosonic_states = sum([cell.eigenstates for cell in domain.associated_cells])
+                
+                for cell in domain.associated_cells:
+
+                    domain.bosonic_states = sum([cell.eigenstates for cell in domain.associated_cells])
+
+                    pass
+                
+                non_elim_coords = domain.non_elim_coords
+
+                # Need to try to speed this code up:
+                    
+                # Create a list of coordinates with the axes flipped
+                col1 = non_elim_coords[:,0]
+                col2 = non_elim_coords[:,1]
+                rev = np.c_[col2,col1]
+
+                paired_indices = []
+
+                for c in non_elim_coords:
+                    if c in rev:
+                        index1 = non_elim_coords.tolist().index(c.tolist())
+                        index2 = rev.tolist().index(c.tolist())
+                        paired_indices.append([index1,index2])
+                        pass
+                    else:
+                        pass
+                    pass
+
+                bosonic_states_transposed = np.transpose(domain.bosonic_states)
+
+                for state in bosonic_states_transposed:
+                    projected_state = state.copy()
+                    for indices in paired_indices:
+                        projected_state[indices[0]] = state[indices[0]] + state[indices[1]]
+                        pass
+                    bosonic_states_transposed[bosonic_states_transposed.tolist().index(state.tolist())] = projected_state
+                    pass
+
+                domain.bosonic_states = np.transpose(bosonic_states_transposed)
+                
                 pass
             elif domain.split == False:
+
                 domain.bosonic_states = sum([cell.eigenstates for cell in domain.associated_cells])
+
                 pass
             else:
                 raise Exception

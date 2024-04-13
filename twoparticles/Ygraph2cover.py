@@ -324,7 +324,7 @@ def twoparticlesYgraph2cover(N):
 if __name__ == "__main__":
     # Main
     
-    N = 10 # The length of a wire
+    N = 20 # The length of a wire
 
     # Scaling factor
     h = (np.pi)/(N-1)
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(0)
+    #Ygraph.plot_states(0)
 
     # Project the states onto the bosonic subspace
     #bosonic_projection(Ygraph,1)
