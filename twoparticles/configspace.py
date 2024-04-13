@@ -126,6 +126,7 @@ class ConfigurationSpace:
 
                 paired_indices = []
 
+                # Create list of identified coordinates in the domain
                 for c in non_elim_coords:
                     if c in rev:
                         index1 = non_elim_coords.tolist().index(c.tolist())
@@ -136,6 +137,7 @@ class ConfigurationSpace:
                         pass
                     pass
 
+                # Project halves of the triangle onto each other
                 bosonic_states_transposed = np.transpose(domain.bosonic_states)
 
                 for state in bosonic_states_transposed:
