@@ -51,7 +51,7 @@ def looptwoparticles2cover(N):
 if __name__ == "__main__":
     # Main
     
-    N = 10 # The length of a wire
+    N = 40 # The length of a wire
     
     Loop2Cover = looptwoparticles2cover(N)
 

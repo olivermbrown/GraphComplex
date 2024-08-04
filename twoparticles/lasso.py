@@ -74,10 +74,10 @@ if __name__ == "__main__":
 
     spectrum = Lasso.spectrum
     print("Scaling factor:")
-    print(5/spectrum[1])
-    print(5/spectrum[1]*spectrum)
+    print(18/spectrum[1])
+    print(18/spectrum[1]*spectrum)
 
     # Plot the states
-    Lasso.plot_states(0)
+    Lasso.plot_states(1)
     
     pass

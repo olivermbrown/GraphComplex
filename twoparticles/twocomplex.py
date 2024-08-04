@@ -807,8 +807,9 @@ class Complex:
             plt.title("D"+str(indices))
             ax.set_xlabel("x_e"+str(indices[0]))
             ax.set_ylabel("y_e"+str(indices[1]))
-            ax.zaxis.set_rotate_label(False)
             ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
+            ax.ticklabel_format(axis='z',style='plain',useOffset=True)
+            ax.zaxis.labelpad=10
             plt.show()
             c+=length
             pass

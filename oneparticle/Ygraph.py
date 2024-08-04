@@ -40,7 +40,7 @@ if __name__=="__main__":
 
     Y.print_eqs()
 
-    spectrum, states = Y.lapl_solve(2)
+    spectrum, states = Y.lapl_solve(2,30)
 
     spectrum.sort()
     print(spectrum)

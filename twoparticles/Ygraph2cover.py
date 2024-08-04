@@ -324,17 +324,12 @@ def twoparticlesYgraph2cover(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 50 # The length of a wire
 
     # Scaling factor
     h = (np.pi)/(N-1)
 
     Ygraph = twoparticlesYgraph2cover(N)
-
-    #Ygraph.print_eqs()
-
-    #spectrum = Ygraph.lapl_spectrum(h,2,200)
-    #print(spectrum)
 
     Ygraph.lapl_solve(h,2,20)
     print("Unsorted eigenvalues = " + str(Ygraph.spectrum))
@@ -344,10 +339,10 @@ if __name__ == "__main__":
     #Ygraph.plot_states(0)
 
     # Project the states onto the bosonic subspace
-    #bosonic_projection(Ygraph,1)
     Configs = configspace.ConfigurationSpace(Ygraph)
 
     Configs.bosonic_projection()
-    Configs.plot_projected_wavefunction(0)
+    #Configs.plot_projected_wavefunction(0)
+    Configs.save_projected_wavefunction(0)
     
     pass

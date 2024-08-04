@@ -12,6 +12,7 @@ from matplotlib import cm
 
 import squareFDM
 import twocomplex
+import configspace
 
 def twoparticlesYgraph(N):
     # Evaluate the spectrum of the Laplacian on the distinguishable configuration space of two particles on the Y graph
@@ -32,15 +33,15 @@ def twoparticlesYgraph(N):
     D11.split_domain()
     D22.split_domain()
     D33.split_domain()
-    D11.indices = (1,1)
-    D22.indices = (2,2)
-    D33.indices = (3,3)
-    D12.indices = (1,2)
-    D13.indices = (1,3)
-    D23.indices = (2,3)
-    D21.indices = (2,1)
-    D31.indices = (3,1)
-    D32.indices = (3,2)
+    D11.indices = (1,1,0)
+    D22.indices = (2,2,0)
+    D33.indices = (3,3,0)
+    D12.indices = (1,2,0)
+    D13.indices = (1,3,0)
+    D23.indices = (2,3,0)
+    D21.indices = (2,1,0)
+    D31.indices = (3,1,0)
+    D32.indices = (3,2,0)
     
     cells = [D11,D22,D33,D12,D13,D23,D21,D31,D32]
     
@@ -86,11 +87,17 @@ if __name__ == "__main__":
     #spectrum = Ygraph.lapl_spectrum(h,2,50)
     #print(spectrum)
 
-    Ygraph.lapl_solve(h,3,50)
+    Ygraph.lapl_solve(h,2,100)
     print("Unsorted eigenvalues = " + str(Ygraph.spectrum))
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(0)
+    Ygraph.plot_states(3)
+
+    Configs = configspace.ConfigurationSpace(Ygraph)
+
+    Configs.bosonic_projection()
+    Configs.plot_projected_wavefunction(3)
+    #Configs.save_projected_wavefunction(0)
     
     pass

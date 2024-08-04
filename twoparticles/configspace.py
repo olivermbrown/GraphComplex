@@ -117,45 +117,40 @@ class ConfigurationSpace:
                 
                 non_elim_coords = domain.non_elim_coords
 
-                # Need to try to speed this code up:
                     
                 # Create a list of coordinates with the axes flipped
                 col1 = non_elim_coords[:,0]
                 col2 = non_elim_coords[:,1]
                 rev = np.c_[col2,col1]
 
-                paired_indices = []
-
-                # Create list of identified coordinates in the domain
-                for c in non_elim_coords:
-                    if c in rev:
-                        index1 = non_elim_coords.tolist().index(c.tolist())
-                        index2 = rev.tolist().index(c.tolist())
-                        paired_indices.append([index1,index2])
-                        pass
-                    else:
-                        pass
-                    pass
+                # Create list of identified coordinates in the domain (vectorised version)
+                E = np.ones(len(non_elim_coords))
+                t1 = np.transpose(np.tensordot(non_elim_coords,E,axes=0),axes=(0,2,1))
+                t2 = np.tensordot(E,rev,axes=0)
+                Total = t1-t2
+                idx = np.array(np.where(np.all(Total==0,axis=2))).T
 
                 # Project halves of the triangle onto each other
                 bosonic_states_transposed = np.transpose(domain.bosonic_states)
 
                 for state in bosonic_states_transposed:
                     projected_state = state.copy()
-                    for indices in paired_indices:
-                        projected_state[indices[0]] = state[indices[0]] + state[indices[1]]
-                        pass
+                    idx1 = idx[:,0]
+                    idx2 = idx[:,1]
+                    projected_state[idx1] = state[idx1] + state[idx2]
                     bosonic_states_transposed[bosonic_states_transposed.tolist().index(state.tolist())] = projected_state
                     pass
 
                 domain.bosonic_states = np.transpose(bosonic_states_transposed)
                 
                 pass
+            
             elif domain.split == False:
 
                 domain.bosonic_states = sum([cell.eigenstates for cell in domain.associated_cells])
 
                 pass
+
             else:
                 raise Exception
             pass
@@ -168,8 +163,8 @@ class ConfigurationSpace:
         domains = self.domains
 
         for domain in domains:
-            i = domains.index(domain)
 
+            indices = domain.indices
             coords = domain.non_elim_coords
 
             state = domain.bosonic_states[:,n]
@@ -178,15 +173,37 @@ class ConfigurationSpace:
             ax = plt.figure().add_subplot(projection='3d')
 
             ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap=cm.inferno)
-            #ax.scatter(coords[:,0],coords[:,1],state,c=state,cmap=cm.autumn)
-            indices = domain.indices
-
+            
             plt.title("D"+str(indices))
             ax.set_xlabel("x_e"+str(indices[0]))
             ax.set_ylabel("y_e"+str(indices[1]))
             ax.zaxis.set_rotate_label(False)
             ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
+            ax.ticklabel_format(axis='z',style='plain',useOffset=True)
+            ax.zaxis.labelpad=10
             plt.show()
+            pass
+
+        return None
+    
+    def save_projected_wavefunction(self,n):
+        # Save the projected n-th wavefunction to a file
+
+        domains = self.domains
+
+        for domain in domains:
+
+            indices = domain.indices
+            coords = domain.non_elim_coords
+
+            state = domain.bosonic_states[:,n]
+            state = np.real(state)
+
+            wvf = np.array([coords[:,0],coords[:,1],state])
+
+            filename = "Wvf-" + "D_" + str(indices)+ ".txt"
+            np.savetxt(filename,wvf,delimiter=",")
+
             pass
 
         return None
