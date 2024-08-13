@@ -26,6 +26,7 @@ class ConfigurationSpace:
 
         self.cells = cells
         self.gluings = []
+        self.gluings_with_branch_cut = []
         self.lapl_gen = False
         self.edges_with_bc_appl = []
         self.eliminated_vars = []
@@ -141,6 +142,19 @@ class ConfigurationSpace:
 
         return None
 
+    def glue_with_branch_cut(self, gluing):
+        """
+        Define a gluing of a set of edges in the configuration space with a branch cut applied to the final edge in the gluing.
+
+        Args:
+            self: The ConfigurationSpace object
+            gluing (list): A list of edges to glue together in the configuration space with a branch cut applied to the final edge in the gluing.     
+        """
+
+        self.gluings_with_branch_cut.append(gluing)
+
+        return None
+
     def gen_lapl(self):
         # Generate the Laplacian matrix on the glued complex
 
@@ -150,6 +164,10 @@ class ConfigurationSpace:
         # Apply the gluing map to the Laplacian matrix
         for gluing in self.gluings:
             self.apply_gluing(gluing)
+            pass
+
+        for gluing in self.gluings_with_branch_cut:
+            self.apply_gluing_with_branch_cut(gluing)
             pass
 
         # Apply diagonal boundary conditions to the Laplacian matrix
@@ -323,7 +341,6 @@ class ConfigurationSpace:
             edge = boundary.edge
             for x in edge_coords[i]:
                 j = edge_coords[i].index(x)
-                #
                 if boundary == domain.x0:# or edge == domain.x0inv:
                     s = x + domain.N
                     if s not in el:
@@ -341,7 +358,14 @@ class ConfigurationSpace:
                         pass
                     pass
                 elif boundary == domain.x1:# or edge == domain.x1inv:
-                    s = x - domain.N
+                    if type(domain) == cls.SquareCell:
+                        s = x - domain.N
+                        pass
+                    elif type(domain) == cls.TriangleCell:
+                        s = x - domain.N + 1
+                        pass
+                    else:
+                        raise Exception
                     if s not in el:
                         v[j,s] += 1/n
                         pass
@@ -422,6 +446,167 @@ class ConfigurationSpace:
         #self.glueings.append(gl)
         
         return None
+    
+    def apply_gluing_with_branch_cut(self,gl):
+        """
+        Glue together edges in the configuration space with a branch cut applied to the final edge in the gluing.
+
+        Args:
+            self: The ConfigurationSpace object
+            gl (list): A list of edges to glue together in the configuration space with a branch cut applied to the final edge in the gluing.
+        """
+        
+        self.check_if_lapl_gen()
+        
+        L = self.L
+        cells = self.cells
+        el = self.eliminated_vars
+        
+        locs = []
+        
+        blocks = []
+        edge_coords = []
+
+        # Set phase factor for branch cut
+        phase = -1
+
+        for boundary in gl:
+            edge_coords.append(boundary.edge_indices)
+            pass
+        
+        dim = L.shape[0]
+        
+        L = L.astype('complex')
+        
+        # Construct vector to implement the gluing condition
+        
+        v = np.zeros((np.array(edge_coords).shape[1],dim),dtype=complex)
+        
+        n = len(gl)
+        
+        for boundary in gl:
+            i = gl.index(boundary)
+            domain = boundary.domain
+            edge = boundary.edge
+            for x in edge_coords[i]:
+                j = edge_coords[i].index(x)
+                if boundary == domain.x0:# or edge == domain.x0inv:
+                    s = x + domain.N
+                    if s not in el:
+                        if i == n-1:
+                            v[j,s] += phase*1/n
+                            pass
+                        else:
+                            v[j,s] += 1/n
+                            pass
+                        pass
+                    else:
+                        pass
+                    pass
+                elif boundary == domain.y0:# or edge == domain.y0inv:
+                    s = x + 1
+                    if s not in el:
+                        if i == n-1:
+                            v[j,s] += phase*1/n
+                            print(v[j,s])
+                            pass
+                        else:
+                            v[j,s] += 1/n
+                            pass
+                        pass
+                    else:
+                        pass
+                    pass
+                elif boundary == domain.x1:# or edge == domain.x1inv:
+                    s = x - domain.N
+                    if s not in el:
+                        if i == n-1:
+                            v[j,s] += phase*1/n
+                            pass
+                        else:
+                            v[j,s] += 1/n
+                            pass
+                        pass
+                    else:
+                        pass
+                    pass
+                elif boundary == domain.y1:# or edge == domain.y1inv:
+                    s = x - 1
+                    if s not in el:
+                        if i == n-1:
+                            v[j,s] += phase*1/n
+                            pass
+                        else:
+                            v[j,s] += 1/n
+                            pass
+                        pass
+                    else:
+                        pass
+                    pass
+                elif boundary == domain.diag:
+                    raise Exception
+                else:
+                    pass
+                pass
+            pass
+        
+        # Generate list of all nodes on exterior boundary
+        ext = []
+        for boundary in gl:
+            domain = boundary.domain
+            for e in domain.edges:
+                ext += boundary.edge_indices
+                pass
+            pass
+        
+        ext.sort()
+        
+        # Eliminate exterior boundary nodes from the gluing vector v - TODO
+        i = 0
+        for line in v:
+            indices = np.nonzero(line)
+            for j in indices[0]:
+                if j in ext:
+                    v[i,j] = 0
+                    pass
+                else:
+                    pass
+                pass
+            i += 1
+            pass
+        
+        # Apply gluing to the Laplacian matrix
+        
+        for boundary in gl:
+            i = gl.index(boundary)
+            domain = boundary.domain
+            edge = boundary.edge
+            for x in edge_coords[i]:
+                j = edge_coords[i].index(x)
+                
+                nzs = np.nonzero(L[:,x])
+                for row in nzs[0]:
+                    
+                    e = L[row, x]
+                    L[row] += e*v[j]
+                    L[row, x] = 0
+                    pass
+                el.append(x)
+                L[x] = 0
+                L[:,x] = 0
+                pass
+            
+            self.edges_with_bc_appl.append(boundary)
+            self.free_edges.remove(boundary)
+            pass
+        
+        el.sort()
+        
+        self.L = L
+        
+        self.eliminated_vars = el
+                
+        return None
 
     def apply_dirichlet(self, boundary):
         """
@@ -491,7 +676,7 @@ class ConfigurationSpace:
         self.simplify_lapl()
         matrix = self.sL
 
-        matrix = matrix.astype('float32')
+        matrix = matrix.astype('complex64')
         matrix.tocsr()
         eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=False)
 
@@ -507,7 +692,7 @@ class ConfigurationSpace:
         self.simplify_lapl()
         matrix = self.sL
         
-        matrix = matrix.astype('float32')
+        matrix = matrix.astype('complex64')
         matrix.tocsr()
         eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=True)
         
@@ -630,7 +815,7 @@ class ConfigurationSpace:
 
         return None
     
-    def plot_states(self, n, N_eigs):
+    def plot_states(self, n,):
         # Plot the states of the system
 
         if self.solved == True:

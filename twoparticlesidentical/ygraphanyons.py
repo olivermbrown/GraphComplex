@@ -9,7 +9,7 @@ from matplotlib import cm
 import cells as cls
 import configs
 
-def YgraphBosons(N):
+def YgraphAnyons(N):
 
     D11 = cls.TriangleCell(N)
     D22 = cls.TriangleCell(N)
@@ -33,7 +33,7 @@ def YgraphBosons(N):
 
     CY.glue(gluing1)
     CY.glue(gluing2)
-    CY.glue(gluing3)
+    CY.glue_with_branch_cut(gluing3)
 
     CY.exterior_bc("dirichlet")
     CY.diagonal_bc("dirichlet")
@@ -45,13 +45,13 @@ def YgraphBosons(N):
 if __name__ == "__main__":
     # Main
 
-    N = 50
+    N = 20
     h = (np.pi)/(N-1)
 
-    CY = YgraphBosons(N)
+    CY = YgraphAnyons(N)
 
-    CY.lapl_solve(h,2,100)
+    CY.lapl_solve(h,2,20)
     spec = CY.spectrum
     spec.sort()
     print(spec)
-    CY.plot_states(0)
+    CY.plot_states(0,20)

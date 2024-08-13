@@ -92,7 +92,7 @@ if __name__ == "__main__":
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
     # Plot the states
-    Ygraph.plot_states(3)
+    Ygraph.plot_states(0)
 
     Configs = configspace.ConfigurationSpace(Ygraph)
 
