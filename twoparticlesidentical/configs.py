@@ -142,16 +142,17 @@ class ConfigurationSpace:
 
         return None
 
-    def glue_with_branch_cut(self, gluing):
+    def glue_with_branch_cut(self, gluing, phase):
         """
         Define a gluing of a set of edges in the configuration space with a branch cut applied to the final edge in the gluing.
 
         Args:
             self: The ConfigurationSpace object
             gluing (list): A list of edges to glue together in the configuration space with a branch cut applied to the final edge in the gluing.     
+            phase (complex): The phase factor to apply to the final edge in the gluing.
         """
 
-        self.gluings_with_branch_cut.append(gluing)
+        self.gluings_with_branch_cut.append((gluing, phase))
 
         return None
 
@@ -166,8 +167,8 @@ class ConfigurationSpace:
             self.apply_gluing(gluing)
             pass
 
-        for gluing in self.gluings_with_branch_cut:
-            self.apply_gluing_with_branch_cut(gluing)
+        for (gluing, phase) in self.gluings_with_branch_cut:
+            self.apply_gluing_with_branch_cut(gluing, phase)
             pass
 
         # Apply diagonal boundary conditions to the Laplacian matrix
@@ -447,7 +448,7 @@ class ConfigurationSpace:
         
         return None
     
-    def apply_gluing_with_branch_cut(self,gl):
+    def apply_gluing_with_branch_cut(self, gl, phase):
         """
         Glue together edges in the configuration space with a branch cut applied to the final edge in the gluing.
 
@@ -468,7 +469,6 @@ class ConfigurationSpace:
         edge_coords = []
 
         # Set phase factor for branch cut
-        phase = -1
 
         for boundary in gl:
             edge_coords.append(boundary.edge_indices)
@@ -508,7 +508,6 @@ class ConfigurationSpace:
                     if s not in el:
                         if i == n-1:
                             v[j,s] += phase*1/n
-                            print(v[j,s])
                             pass
                         else:
                             v[j,s] += 1/n
@@ -588,7 +587,12 @@ class ConfigurationSpace:
                 for row in nzs[0]:
                     
                     e = L[row, x]
-                    L[row] += e*v[j]
+                    if i == n-1:
+                        L[row] += np.conjugate(phase)*e*v[j]
+                        pass
+                    else:
+                        L[row] += e*v[j]
+                        pass
                     L[row, x] = 0
                     pass
                 el.append(x)

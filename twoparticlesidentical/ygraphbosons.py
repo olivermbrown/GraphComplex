@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     CY = YgraphBosons(N)
 
-    CY.lapl_solve(h,2,100)
+    CY.lapl_solve(h,2,20)
     spec = CY.spectrum
     spec.sort()
     print(spec)

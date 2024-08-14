@@ -648,6 +648,9 @@ class Complex:
         eigs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=False)
 
         spec = (h)**(-2) * np.abs(eigs)
+
+        self.spectrum = np.round(spec,dps)
+
         spec.sort()
         return np.round(spec,dps)
     

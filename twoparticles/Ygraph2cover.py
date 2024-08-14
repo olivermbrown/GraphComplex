@@ -331,7 +331,7 @@ if __name__ == "__main__":
 
     Ygraph = twoparticlesYgraph2cover(N)
 
-    Ygraph.lapl_solve(h,2,20)
+    Ygraph.lapl_spectrum(h,2,50)
     print("Unsorted eigenvalues = " + str(Ygraph.spectrum))
     print("Sorted eigenvalues = " + str(np.sort(Ygraph.spectrum)))
 
@@ -339,10 +339,10 @@ if __name__ == "__main__":
     #Ygraph.plot_states(0)
 
     # Project the states onto the bosonic subspace
-    Configs = configspace.ConfigurationSpace(Ygraph)
+    #Configs = configspace.ConfigurationSpace(Ygraph)
 
-    Configs.bosonic_projection()
+    #Configs.bosonic_projection()
     #Configs.plot_projected_wavefunction(0)
-    Configs.save_projected_wavefunction(0)
+    #Configs.save_projected_wavefunction(0)
     
     pass

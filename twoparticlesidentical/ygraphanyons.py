@@ -9,7 +9,7 @@ from matplotlib import cm
 import cells as cls
 import configs
 
-def YgraphAnyons(N):
+def YgraphAnyons(N, alpha):
 
     D11 = cls.TriangleCell(N)
     D22 = cls.TriangleCell(N)
@@ -31,9 +31,11 @@ def YgraphAnyons(N):
     gluing2 = [D22.y0, D12.y0, D23.x0]
     gluing3 = [D33.y0, D23.y0, D13.y0]
 
+    phase = np.exp(1j*np.pi*alpha)
+
     CY.glue(gluing1)
     CY.glue(gluing2)
-    CY.glue_with_branch_cut(gluing3)
+    CY.glue_with_branch_cut(gluing3, phase)
 
     CY.exterior_bc("dirichlet")
     CY.diagonal_bc("dirichlet")
@@ -45,13 +47,15 @@ def YgraphAnyons(N):
 if __name__ == "__main__":
     # Main
 
-    N = 20
+    N = 50
     h = (np.pi)/(N-1)
 
-    CY = YgraphAnyons(N)
+    alpha = 7/8
+
+    CY = YgraphAnyons(N, alpha)
 
     CY.lapl_solve(h,2,20)
     spec = CY.spectrum
     spec.sort()
     print(spec)
-    CY.plot_states(0,20)
+    CY.plot_states(0)
