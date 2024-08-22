@@ -789,8 +789,8 @@ class ConfigurationSpace:
 
         N = cell.N
 
-        x = np.linspace(0,1,N-2,endpoint=False)
-        y = np.linspace(0,1,N-2,endpoint=False)
+        x = np.linspace(1/N,1-1/N,N-2,endpoint=True)
+        y = np.linspace(1/N,1-1/N,N-2,endpoint=True)
 
         xx, yy = np.meshgrid(x,y)
         grid = np.array((xx.ravel(), yy.ravel())).T
@@ -819,7 +819,7 @@ class ConfigurationSpace:
 
         return None
     
-    def plot_states(self, n,):
+    def plot_states(self, n, return_data=False, show_plots=True):
         # Plot the states of the system
 
         if self.solved == True:
@@ -831,6 +831,8 @@ class ConfigurationSpace:
         
         cells = self.cells
         states = self.states
+
+        data = []
         
         c = 0
         for cell in cells:
@@ -857,10 +859,31 @@ class ConfigurationSpace:
             ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
             ax.ticklabel_format(axis='z',style='plain',useOffset=True)
             ax.zaxis.labelpad=10
-            plt.show()
+
+            if show_plots == True:
+                plt.show()
+                pass
+            else:
+                pass
+
+            plt.clf()
+            plt.cla()
+            plt.close()
+            
             c+=length
+
+            if return_data == True:
+                data.append((coords[:,0],coords[:,1],state))
+                pass
+            else:
+                pass
             pass
         
+        if return_data == True:
+            return data
+        else:
+            pass
+
         return None
 
 

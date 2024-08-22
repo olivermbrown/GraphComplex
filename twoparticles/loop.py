@@ -45,7 +45,7 @@ def looptwoparticles(N):
 if __name__ == "__main__":
     # Main
     
-    N = 20 # The length of a wire
+    N = 100 # The length of a wire
     
     OneWire = looptwoparticles(N)
 
@@ -54,9 +54,12 @@ if __name__ == "__main__":
     #OneWire.print_eqs()
 
     OneWire.lapl_solve(h,2,50)
+    print(OneWire.spectrum)
     s = sorted(OneWire.spectrum)
     print(s)
 
     # Plot the states
+    OneWire.plot_states(0)
     OneWire.plot_states(1)
+    OneWire.plot_states(2)
     pass

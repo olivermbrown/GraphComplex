@@ -45,3 +45,6 @@ if __name__ == "__main__":
     spec.sort()
     print(spec)
     TG.plot_states(0)
+    TG.plot_states(1)
+    TG.plot_states(2)
+    pass
