@@ -80,13 +80,13 @@ class ConfigurationSpace:
         diagonal = []
 
         for cell in cells:
-            if isinstance(cell, cls.SquareCell):
+            if type(cell) == cls.SquareCell:
                 for edge in cell.edges:
                     free_edges.append(edge)
                     edge.find_edge_indices_in_configuration_space(self)
                     pass
                 pass
-            elif isinstance(cell, cls.TriangleCell):
+            elif type(cell) == cls.TriangleCell:
                 for edge in cell.edges:
                     if edge == cell.diag:
                         diagonal.append(edge)
@@ -343,7 +343,14 @@ class ConfigurationSpace:
             for x in edge_coords[i]:
                 j = edge_coords[i].index(x)
                 if boundary == domain.x0:# or edge == domain.x0inv:
-                    s = x + domain.N
+                    if type(domain) == cls.SquareCell:
+                        s = x + domain.N
+                        pass
+                    elif type(domain) == cls.TriangleCell:
+                        s = x + domain.N - 1
+                        pass
+                    else:
+                        raise Exception
                     if s not in el:
                         v[j,s] += 1/n
                         pass
@@ -374,7 +381,14 @@ class ConfigurationSpace:
                         pass
                     pass
                 elif boundary == domain.y1:# or edge == domain.y1inv:
-                    s = x - 1
+                    if type(domain) == cls.SquareCell:
+                        s = x - 1
+                        pass
+                    elif type(domain) == cls.TriangleCell:
+                        s = x - 1
+                        pass
+                    else:
+                        raise Exception
                     if s not in el:
                         v[j,s] += 1/n
                         pass
@@ -491,7 +505,14 @@ class ConfigurationSpace:
             for x in edge_coords[i]:
                 j = edge_coords[i].index(x)
                 if boundary == domain.x0:# or edge == domain.x0inv:
-                    s = x + domain.N
+                    if type(domain) == cls.SquareCell:
+                        s = x + domain.N
+                        pass
+                    elif type(domain) == cls.TriangleCell:
+                        s = x + domain.N - 1
+                        pass
+                    else:
+                        raise Exception
                     if s not in el:
                         if i == n-1:
                             v[j,s] += phase*1/n
@@ -796,19 +817,19 @@ class ConfigurationSpace:
         grid = np.array((xx.ravel(), yy.ravel())).T
 
         if isinstance(cell, cls.TriangleCell):
-            # Remove the upper triangle from the coordinate grid.
+            # Remove the lower triangle from the coordinate grid.
             g = np.flip(grid,axis=1)
 
             indices = []
             for j in range(0,N-2):
-                indices += list(range(j*(N-2)+(j),(j+1)*(N-2)))
+                indices += list(range((j)*(N-2),j*(N-2)+(j)+1))
                 pass
             
-            c = np.delete(g,indices,axis=0)
-            coords = np.flip(c,axis=1)
+            coords = np.delete(g,indices,axis=0)
+            #coords = np.flip(c,axis=1)
             pass
         elif isinstance(cell, cls.SquareCell):
-            coords = grid
+            coords = np.flip(grid,axis=1)
             pass
         else:
             raise Exception

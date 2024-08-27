@@ -1,5 +1,5 @@
 """
-Code to solve the Laplacian on a the lasso graph using the finite difference method.
+Code to solve the Laplacian on a single wire using the finite difference method.
 """
 
 import matplotlib.pyplot as plt
@@ -7,22 +7,21 @@ from matplotlib import cm
 import lineFDM
 import onecomplex
 
-def oneparticletwowires(N):
+def oneparticleloop(N):
     # Create a 1 complex describing one particle on a single wire
 
     # Create one particle domain
     l1 = lineFDM.Line(N)
-    l2 = lineFDM.Line(N)
 
     # Create one particle complex
-    cells = [l1, l2]
+    cells = [l1]
     Network = onecomplex.Complex(cells)
 
     # Set boundary conditions
     Network.exterior_bc("dirichlet")
 
-    # Glue the two wires together
-    gluing = [l1.end, l2.start, l2.end]
+    # Glue the ends of the wire together
+    gluing = [l1.start, l1.end]
     Network.glue(gluing)
 
     Network.gen_lapl()
@@ -33,17 +32,19 @@ if __name__=="__main__":
     # Main
     
     # Define length of wire
-    N = 200
+    N = 30
 
-    twowires = oneparticletwowires(N)
+    loop = oneparticleloop(N)
 
-    spectrum, states = twowires.lapl_solve(2,n_eigs=100)
+    spectrum, states = loop.lapl_solve(2,n_eigs=10)
 
-    #spectrum.sort()
+    print("Unsorted spectrum:")
+    print(spectrum)
+    spectrum.sort()
+    print("Sorted spectrum:")
     print(spectrum)
 
-    # Plot the first 5 eigenstates
-    for i in range(5):
-        twowires.plot_states(i)
+    #loop.print_eqs()
+    loop.plot_states(1)
 
     pass

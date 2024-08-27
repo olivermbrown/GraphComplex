@@ -78,6 +78,6 @@ if __name__ == "__main__":
     print(18/spectrum[1]*spectrum)
 
     # Plot the states
-    Lasso.plot_states(1)
+    Lasso.plot_states(0)
     
     pass

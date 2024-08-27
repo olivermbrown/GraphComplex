@@ -640,7 +640,6 @@ class Complex:
         # Scaling factor h
         # Decimal places to round to is dps
         
-        self.simplify_lapl()
         matrix = self.sL
 
         matrix = matrix.astype('float32')
@@ -659,7 +658,6 @@ class Complex:
         # Scaling factor h
         # Decimal places to round to is dps
         
-        self.simplify_lapl()
         matrix = self.sL
         
         matrix = matrix.astype('float32')

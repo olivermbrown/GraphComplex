@@ -27,9 +27,9 @@ def YgraphAnyons(N, alpha):
 
     CY = configs.ConfigurationSpace([D11,D22,D33,D12,D13,D23])
 
-    gluing1 = [D11.y0, D13.x0, D12.x0]
-    gluing2 = [D22.y0, D12.y0, D23.x0]
-    gluing3 = [D33.y0, D23.y0, D13.y0]
+    gluing1 = [D11.x0, D13.x0, D12.x0]
+    gluing2 = [D22.x0, D12.y0, D23.x0]
+    gluing3 = [D33.x0, D23.y0, D13.y0]
 
     phase = np.exp(1j*np.pi*alpha)
 
@@ -47,7 +47,7 @@ def YgraphAnyons(N, alpha):
 if __name__ == "__main__":
     # Main
 
-    N = 100
+    N = 20
     h = (np.pi)/(N-1)
 
     alpha = 1/2

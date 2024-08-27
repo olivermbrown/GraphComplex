@@ -9,7 +9,7 @@ from matplotlib import cm
 
 import cells as cls
 import configs
-import ygraphanyons as yga
+import lassoanyons as lsa
 
 def find_nearest(array,value):
     idx = np.searchsorted(array, value, side="left")
@@ -20,22 +20,22 @@ def find_nearest(array,value):
 
 if __name__=="__main__":
 
-    N = 50
+    N = 60
     h = (np.pi)/(N-1)
-    alpha = 1/2
+    alpha = 1
 
-    CY = yga.YgraphAnyons(N, alpha)
+    CY = lsa.LassoAnyons(N, alpha)
     CY.lapl_solve(h,2,20)
 
     states = CY.states
     gs = states[:,0]
 
-    D12 = CY.cells[3]
-    edge = D12.x0
+    D21 = CY.cells[1]
+    edge = D21.y0
 
-    data = CY.plot_states(0, return_data=True, show_plots=False)
-    D12_data = data[3]
-    xs, ys, zs = D12_data
+    data = CY.plot_states(0, return_data=True, show_plots=True)
+    D21_data = data[1]
+    xs, ys, zs = D21_data
     edge_length = N-2
     plt.clf()
     plt.plot(xs[:edge_length], np.abs(zs[:edge_length]))

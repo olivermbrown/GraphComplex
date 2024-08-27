@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     #OneWire.print_eqs()
 
-    OneWire.lapl_solve(h,2,50)
+    OneWire.lapl_solve(h,2,20)
     print(OneWire.spectrum)
     s = sorted(OneWire.spectrum)
     print(s)

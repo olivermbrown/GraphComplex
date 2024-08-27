@@ -220,8 +220,8 @@ class TriangleCell(SquareCell):
 
         # Create list of indices to drop from the Laplacian matrix.
         drop_indices = []
-        for i in range (N):
-            drop_indices += [d for d in range(i*N+i+1,(i+1)*N)]
+        for i in range (1,N):
+            drop_indices += [d for d in range(i*N,i*(N+1))]
             pass
 
         # Identify the nodes to drop from the graph.
@@ -234,12 +234,12 @@ class TriangleCell(SquareCell):
         self.dropped_indices = drop_indices
 
         # Delete corners and extra nodes from the objects's data.
-        self.corners.remove(nodes_list[N-1])
+        self.corners.remove(nodes_list[N*(N-1)])
 
-        self.edges.remove(self.x0)
-        self.x0 = None
-        self.edges.remove(self.y1)
-        self.y1 = None
+        self.edges.remove(self.y0)
+        self.y0 = None
+        self.edges.remove(self.x1)
+        self.x1 = None
         
 
         return G

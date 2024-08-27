@@ -9,7 +9,7 @@ from matplotlib import cm
 import cells as cls
 import configs
 
-def LoopBosons(N):
+def LoopAnyons(N, alpha):
 
     D11 = cls.TriangleCell(N)
 
@@ -19,9 +19,10 @@ def LoopBosons(N):
     CL = configs.ConfigurationSpace([D11])
 
     gluing = [D11.y0, D11.x1]
-    #gluing2 = [D11.y1, D11.x0]
 
-    CL.glue(gluing)
+    phase = np.exp(1j*np.pi*alpha)
+
+    CL.glue_with_branch_cut(gluing, phase)
 
     CL.exterior_bc("dirichlet")
     CL.diagonal_bc("dirichlet")
@@ -33,10 +34,11 @@ def LoopBosons(N):
 if __name__ == "__main__":
     # Main
 
-    N = 50
+    N = 100
     h = (np.pi)/(N-1)
+    a = 1
 
-    TG = LoopBosons(N)
+    TG = LoopAnyons(N,a)
 
     #TG.print_eqs()
 
