@@ -32,6 +32,7 @@ class SquareCell:
         self.num_non_elim = None
         self.indices = None
         self.eigenstates = None
+        self.cell_coords_constructed = False
 
         return None
 
@@ -261,6 +262,7 @@ class Edge:
 
         self.domain = domain
         self.edge = edge_nodes
+        self.eliminated = False
 
         return None
 

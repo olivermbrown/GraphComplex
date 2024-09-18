@@ -9,7 +9,7 @@ from matplotlib import cm
 import cells as cls
 import configs
 
-def DumbbellBosons(N):
+def DumbbellAnyons(N, alpha):
 
     D11 = cls.TriangleCell(N)
     D22 = cls.TriangleCell(N)
@@ -27,37 +27,53 @@ def DumbbellBosons(N):
 
     C = configs.ConfigurationSpace([D11,D22,D33,D21,D31,D32])
 
-    gluing1 = [D11.y0,D11.x1,D21.x0]
-    gluing2 = [D21.y0,D21.y1,D22.y0]
+    gluing1 = [D11.y1,D21.x0,D11.x0]
+    gluing2 = [D21.y0,D21.y1,D22.x0]
     gluing3 = [D21.x1,D31.x0,D31.x1]
     gluing4 = [D31.y0,D31.y1,D32.y0]
-    gluing5 = [D22.x1,D32.x0,D32.x1]
-    gluing6 = [D32.y1,D33.y0,D33.x1]
-    C.glue(gluing1)
+    gluing5 = [D22.y1,D32.x0,D32.x1]
+    gluing6 = [D32.y1,D33.x0,D33.y1]
+
+    phase = np.exp(1j*np.pi*alpha)
+
+    C.glue_with_branch_cut(gluing1, phase)
     C.glue(gluing2)
     C.glue(gluing3)
     C.glue(gluing4)
     C.glue(gluing5)
-    C.glue(gluing6)
+    C.glue_with_branch_cut(gluing6, phase)
 
     C.exterior_bc("dirichlet")
     C.diagonal_bc("dirichlet")
-
-    C.gen_lapl()
 
     return C
 
 if __name__ == "__main__":
     # Main
 
-    N = 30
+    N = 70
     h = (np.pi)/(N-1)
+    alpha = 0.0
 
-    C = DumbbellBosons(N)
+    C = DumbbellAnyons(N,alpha)
 
     #CY.print_eqs()
 
-    C.lapl_solve(h,2,50)
+    #C.gen_lapl()
+
+    #C.lapl_solve(h,50)
+
+    # Load the states
+    # Eigenvalues filepath
+    states_path = "dumbbell_states/dumbbell_N" + str(N) + "_alpha" + str(alpha) + "_"
+    # Eigenstates filepath
+    eigs_path = "dumbbell_eigenvalues/dumbbell_N" + str(N) + "_alpha" + str(alpha)
+
+    # Load the eigenvalues
+    C.load_eigenvalues(eigs_path)
+    # Load the eigenstates
+    C.load_states(states_path)
+
     spec = C.spectrum
     spec.sort()
     print(spec)

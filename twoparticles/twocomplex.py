@@ -25,6 +25,7 @@ class Complex:
         self.find_edges()
         self.edges_with_bc_appl = []
         self.solved = False
+        self.diagonal_bc = None
         return None
     
     def find_corners(self):
@@ -119,9 +120,9 @@ class Complex:
                     pass
                 pass
             pass
-        elif self.diagnonal_bc == "neumann":
+        elif self.diagonal_bc == "neumann":
             pass
-        elif self.diagnonal_bc == "robin":
+        elif self.diagonal_bc == "robin":
             pass
         else:
             pass
