@@ -42,11 +42,11 @@ if __name__=="__main__":
 
     spectrum, states = twowires.lapl_solve(2,n_eigs=50)
 
-    spectrum.sort()
+    #spectrum.sort()
     # Round spectrum to 2 decimal places
     spectrum = [round(x, 2) for x in spectrum]
     print(spectrum)
 
-    twowires.plot_states(2)
+    twowires.plot_states(7)
 
     pass

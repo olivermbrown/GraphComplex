@@ -233,6 +233,9 @@ class Complex:
             else:
                 pass
             pass
+
+        # Convert L to csr matrix
+        L = L.tocsr()
         
         for x1 in X:
             for row in range (0, dim):

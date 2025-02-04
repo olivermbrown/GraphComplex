@@ -10,6 +10,7 @@ from functools import reduce
 import multiprocessing as mp
 import time
 from itertools import chain
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
@@ -43,8 +44,14 @@ class ConfigurationSpace:
         self.free_edges, self.diagonal = self.get_edges()
         #self.find_edge_indices()
 
+        self.plot_dim = (1,1)
+        self.plots_off = []
+        self.figuresize = (8,6)
+
         self.diagonal_boundary_condition = None
         self.exterior_boundary_condition = None
+
+        self.alpha = 0
         
         return None
 
@@ -777,6 +784,50 @@ class ConfigurationSpace:
         
         return None
     
+    def apply_neumann_strong(self, boundary):
+        """
+        Apply strong Neumann boundary conditions in the Laplacian matrix to a particular edge in the configuration space.
+
+        Args:
+            self: The ConfigurationSpace object
+            boundary (Edge): The edge in the configuration space to apply Dirichlet boundary conditions to.
+        """
+        
+        self.check_if_lapl_gen()
+
+        domain = boundary.domain
+        edge = boundary.edge
+        
+        N = domain.N
+        L = self.L
+        cells = self.cells
+        el = self.eliminated_vars
+        
+        edge_coords = boundary.edge_indices
+
+        off_diagonal = np.array(edge_coords[:-1]) + 1
+
+        neumann_ids = np.concatenate((np.array(edge_coords), off_diagonal))
+
+        L[neumann_ids] = 0
+        L[:,neumann_ids] = 0
+        
+        self.L = L
+        
+        el += list(neumann_ids)
+        el.sort()
+        self.eliminated_vars = el
+
+        boundary.eliminated = True
+        boundary.strongly_eliminated = True
+
+        # Quicker version of the code with using a loop
+        domain.removed_nodes += list(neumann_ids)
+        
+        self.edges_with_bc_appl.append((domain,edge))
+        
+        return None
+    
     def apply_robin(self, boundary):
         """
         Apply Robin boundary conditions in the Laplacian matrix to a particular edge in the configuration space.
@@ -804,6 +855,49 @@ class ConfigurationSpace:
         ones = np.ones(len(edge_coords))
 
         L[edge_coords,edge_coords] += h * c * ones
+        
+        self.L = L
+        
+        #el += edge_coords
+        #el.sort()
+        #self.eliminated_vars = el
+
+        # Quicker version of the code with using a loop
+        domain.removed_nodes += edge
+        
+        self.edges_with_bc_appl.append((domain,edge))
+        
+        return None
+    
+    def apply_robin_strong(self, boundary):
+        """
+        Apply strong Robin boundary conditions in the Laplacian matrix to a particular edge in the configuration space.
+
+        Args:
+            self: The ConfigurationSpace object
+            boundary (Edge): The edge in the configuration space to apply Dirichlet boundary conditions to.
+        """
+        
+        self.check_if_lapl_gen()
+
+        domain = boundary.domain
+        edge = boundary.edge
+        
+        N = domain.N
+        L = self.L
+        cells = self.cells
+        el = self.eliminated_vars
+        c = self.robin_constant
+
+        edge_coords = boundary.edge_indices
+
+        h = (np.pi)/(N-1)
+
+        ones = np.ones(len(edge_coords))
+
+        L[edge_coords,edge_coords] += h * c * ones
+
+        L[edge_coords,edge_coords] = 1/(1+np.exp(1j*np.pi*self.alpha)) * L[edge_coords,edge_coords]
         
         self.L = L
         
@@ -848,7 +942,8 @@ class ConfigurationSpace:
         self.simplify_lapl()
         matrix = self.sL
         
-        matrix = matrix.astype('complex64')
+        #matrix = matrix.astype('complex64')
+        matrix = matrix.astype('complex128')
         matrix.tocsr()
         eigvals, eigvecs = sp.sparse.linalg.eigs(matrix,which='SM',k=N_eigs,return_eigenvectors=True)
         
@@ -996,6 +1091,12 @@ class ConfigurationSpace:
                     pass
                 else:
                     pass
+                if e.strongly_eliminated == True and e == cell.diag:
+                    off_diagonal = np.array(edge_coords[:-1]) + 1
+                    delete_nodes += list(off_diagonal)
+                    pass
+                else:
+                    pass
                 pass
 
             # Add corner nodes to the list of nodes to delete
@@ -1035,7 +1136,7 @@ class ConfigurationSpace:
 
         return None
     
-    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False,plotting_method="surface", realimag="real"):
+    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False,plotting_method="surface", realimag="abs", N_levels=20):
         # Plot the states of the system
 
         if solve_lapl == False:
@@ -1049,7 +1150,63 @@ class ConfigurationSpace:
         
         cells = self.cells
 
+        # Calculate contour grading
+        if plotting_method == "contour":
+            mins = []
+            maxs = []
+            for cell in cells:
+                if realimag == "phase":
+                    #min = np.min(np.angle(cell.eigenstates[:,n]))
+                    #max = np.max(np.angle(cell.eigenstates[:,n]))
+                    min = -np.pi
+                    max = np.pi
+                    pass
+                elif realimag == "abs":
+                    min = np.min(abs(cell.eigenstates[:,n]))
+                    max = np.max(abs(cell.eigenstates[:,n]))
+                    pass
+                elif realimag == "real":
+                    min = np.min(np.real(cell.eigenstates[:,n]))
+                    max = np.max(np.real(cell.eigenstates[:,n]))
+                    pass
+                elif realimag == "imag":
+                    min = np.min(np.imag(cell.eigenstates[:,n]))
+                    max = np.max(np.imag(cell.eigenstates[:,n]))
+                    pass
+                else:
+                    min = np.min(cell.eigenstates[:,n])
+                    max = np.max(cell.eigenstates[:,n])
+                    pass
+                mins.append(min)
+                maxs.append(max)
+                pass
+            min = np.min(mins)
+            max = np.max(maxs)
+            # Generate a range of levels that will be consistent for both plots
+            levels = np.linspace(min, max, N_levels)  # 10 contour levels
+            pass
+        else:
+            pass
+
         data = []
+
+        if plotting_method == "surface":
+            #fig = plt.figure()
+            #ax = fig.add_subplot(projection='3d')
+            pass
+        elif plotting_method == "contour":
+            dim1, dim2 = self.plot_dim
+            fig, ax = plt.subplots(dim1, dim2, figsize=self.figuresize)
+            # Choose colormap
+            if realimag == "phase":
+                plot_cmp = "gray"
+                pass
+            else:
+                plot_cmp = "cividis"
+                pass
+            pass
+        else:
+            raise Exception("Invalid plotting method")
         
         c = 0
         for cell in cells:
@@ -1072,7 +1229,17 @@ class ConfigurationSpace:
                 state = np.imag(state)
                 pass
             elif realimag == "abs":
-                state = np.abs(state)
+                state = abs(state)
+                if plotting_method == "contour":
+                    levels = abs(levels)
+                    # Order levels as min to max
+                    levels.sort()
+                    pass
+                else:
+                    pass
+                pass
+            elif realimag == "phase":
+                state = np.angle(state)
                 pass
             else:
                 raise Exception("Invalid value for realimag")
@@ -1087,37 +1254,72 @@ class ConfigurationSpace:
                 pass
             elif plotting_method == "contour":
                 triang = tri.Triangulation(coords[:, 0], coords[:, 1])
-                fig, ax = plt.subplots()
-                contour_plot = ax.tricontourf(triang, state, cmap="cividis")
-                contour_lines = ax.tricontour(triang, state, colors='black', linewidths=0.4)
-                cbar = fig.colorbar(contour_plot, ax=ax)
-                ax.set_title(r'$\psi$'+str(indices)+"(x,y)")
+                #dim1, dim2 = self.plot_dim
+                #fig, ax = plt.subplots(dim1, dim2)
+                sb1, sb2 = cell.plot_loc
+                contour_plot = ax[sb1,sb2].tricontourf(triang, state, levels=levels, cmap=plot_cmp)
+                contour_lines = ax[sb1,sb2].tricontour(triang, state, levels=levels, colors='black', linewidths=0.4)
+                #cbar = fig.colorbar(contour_plot, ax=ax)
+                id1, id2 = indices
+                strid = str(id1)+","+str(id2)
+                title = r'$\psi_{{{}}}$'.format(strid)
+                ax[sb1,sb2].set_title(title, fontsize=12)
                 if type(cell) == cls.TriangleCell:
                     xs = np.linspace(coords[0,0],coords[-1,0],100)
-                    if cell.diag.eliminated == True:
+                    if cell.diag.eliminated == True and cell.diag.strongly_eliminated == True:
+                        ys = xs + 2*coords[0,0]
+                        pass
+                    elif cell.diag.eliminated == True:
                         ys = xs + coords[0,0]
                         pass
                     else:
                         ys = xs
                         pass                    
-                    line = ax.plot(xs,ys,color='black',linewidth=0.5)
+                    line = ax[sb1,sb2].plot(xs,ys,color='black',linewidth=0.5)
                     pass
                 pass
             else:
                 raise Exception("Invalid plotting method")
             
-            ax.set_xlabel("x_e"+str(indices[0]))
-            ax.set_ylabel("y_e"+str(indices[1]))
+            id1 , id2 = indices
+            xl = fr'$x_{{e_{{{id1}}}}}$'
+            yl = fr'$y_{{e_{{{id2}}}}}$'
+            if plotting_method == "surface":
+                ax.set_xlabel(xl)
+                ax.set_ylabel(yl)
+                pass
+            elif plotting_method == "contour":
+                if cell.use_x_labels == True:
+                    ax[sb1,sb2].set_xlabel(xl)
+                    pass
+                elif cell.use_x_labels == False:
+                    ax[sb1,sb2].get_xaxis().set_visible(False)
+                    pass
+                else:
+                    pass
+                if cell.use_y_labels == True:
+                    ax[sb1,sb2].set_ylabel(yl)
+                    # Rotate y-axis label
+                    ax[sb1,sb2].yaxis.label.set_rotation(0)
+                    pass
+                elif cell.use_y_labels == False:
+                    ax[sb1,sb2].get_yaxis().set_visible(False)
+                    pass
+                else:
+                    pass
+                pass
+            else:
+                raise Exception("Invalid plotting method")
 
-            if show_plots == True:
+            if show_plots == True and plotting_method == "surface":
                 plt.show()
                 pass
             else:
                 pass
 
-            plt.clf()
-            plt.cla()
-            plt.close()
+            #plt.clf()
+            #plt.cla()
+            #plt.close()
             
             c+=length
 
@@ -1127,6 +1329,30 @@ class ConfigurationSpace:
             else:
                 pass
             pass
+
+        if show_plots == True:
+
+            if plotting_method == "surface":
+                #plt.show()
+                pass
+            elif plotting_method == "contour":
+                for po in self.plots_off:
+                    po1, po2 = po
+                    ax[po1,po2].axis('off')
+                    pass
+                #fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.3, hspace=0.4)
+                cbar = fig.colorbar(contour_plot, ax=ax)
+                #plt.savefig("foo.pdf", bbox_inches="tight")
+                plt.show()
+                pass
+            else:
+                raise Exception("Invalid plotting method")
+            pass
+        else:
+            pass
+
+        plt.close()
+        plt.clf()
         
         if return_data == True:
             return data
@@ -1138,9 +1364,9 @@ class ConfigurationSpace:
     def save_states(self, filename):
         # Save the states of the system to a file
 
-        directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
+        #directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
 
-        filename = directory_path + filename
+        #filename = directory_path + filename
 
         cells = self.cells
 
@@ -1152,27 +1378,74 @@ class ConfigurationSpace:
             length = cell.num_non_elim
 
             states = cell.eigenstates
-            states = np.real(states)
+            #states = np.real(states)
 
             #data = np.array((coords[:,0],coords[:,1],states[:])).T
             data = np.hstack((coords, states))
 
             indices = cell.indices
 
-            np.savetxt(filename+"D"+str(indices)+".csv",data,delimiter=",")
+            #np.savetxt(filename+"D"+str(indices)+".csv",data,delimiter=",")
+            np.savetxt(filename+"D"+str(indices)+".csv",data.view(float),delimiter=",")
             c+=length
             pass
 
         return None
     
-    def load_states(self, filename):
+    def load_states(self, filename,override_directory_path=False):
         # Load the states of the system from a file
 
-        directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
+        if override_directory_path == True:
+            directory_path = ""
+            pass
+        else:
+            directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
+            pass
 
         filename = directory_path + filename
 
         cells = self.cells
+
+        # Set the appropriate flags
+        if self.solved == False:
+            if self.diagonal_boundary_condition == "dirichlet":
+                diag = self.diagonal
+                for edge in diag:
+                    edge.eliminated = True
+                    pass
+                pass
+            elif self.diagonal_boundary_condition == "neumann" or self.diagonal_boundary_condition == "robin":
+                pass
+            else:
+                raise Exception("Unknown diagonal boundary condition")
+            
+            if self.exterior_boundary_condition == "dirichlet":
+                free_edges = self.free_edges
+                for edge in free_edges:
+                    edge.eliminated = True
+                    pass
+                pass
+            elif self.exterior_boundary_condition == "neumann" or self.exterior_boundary_condition == "robin":
+                pass
+            else:
+                raise Exception("Unknown exterior boundary condition")
+            
+            for g in self.gluings:
+                for edge in g:
+                    edge.eliminated = True
+                    pass
+                pass
+
+            for g in self.gluings_with_branch_cut:
+                for edge in g[0]:
+                    edge.eliminated = True
+                    pass
+                pass
+
+            self.solved = True
+            pass
+        else:
+            pass
 
         c = 0
         for cell in cells:
@@ -1181,7 +1454,8 @@ class ConfigurationSpace:
             coords = cell.non_elim_coords
             length = cell.num_non_elim
 
-            data = np.loadtxt(filename+"D"+str(cell.indices)+".csv",delimiter=",")
+            #data = np.loadtxt(filename+"D"+str(cell.indices)+".csv",delimiter=",")
+            data = np.loadtxt(filename+"D"+str(cell.indices)+".csv",delimiter=",").view(complex)
             states = data[:,2:]
 
             cell.eigenstates = states
@@ -1194,9 +1468,9 @@ class ConfigurationSpace:
     def save_eigenvalues(self, filename):
         # Save the eigenvalues of the system to a file
 
-        directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
+        #directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
 
-        filename = directory_path + filename
+        #filename = directory_path + filename
 
         spec = self.spectrum
 
@@ -1204,11 +1478,16 @@ class ConfigurationSpace:
 
         return None
     
-    def load_eigenvalues(self, filename):
+    def load_eigenvalues(self, filename, override_directory_path=False):
         # Load the eigenvalues of the system from a file
 
-        directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
-
+        if override_directory_path == True:
+            directory_path = ""
+            pass
+        else:
+            directory_path = "C:/Users/vq22287/OneDrive - University of Bristol/Documents/Anyons on graphs/Eigenstates data/"
+            pass
+        
         filename = directory_path + filename
 
         spec = np.loadtxt(filename+".csv",delimiter=",")

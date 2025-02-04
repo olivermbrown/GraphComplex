@@ -38,11 +38,11 @@ if __name__=="__main__":
     # Main
     
     # Define length of wire
-    N = 50
+    N = 200
 
     Y = oneparticleHgraph(N)
 
-    Y.print_eqs()
+    #Y.print_eqs()
 
     spectrum, states = Y.lapl_solve(2,30)
 

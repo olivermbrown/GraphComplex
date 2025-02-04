@@ -9,7 +9,7 @@ from matplotlib import cm
 import cells as cls
 import configs
 
-def LassoAnyonsDirichlet(N, alpha):
+def LassoAnyonsHardcore(N, alpha):
 
     D11 = cls.TriangleCell(N)
     D12 = cls.SquareCell(N)
@@ -34,7 +34,7 @@ def LassoAnyonsDirichlet(N, alpha):
 
     return C
 
-def LassoAnyonsRobin(N, alpha):
+def LassoAnyonsContact(N, alpha):
 
     D11 = cls.TriangleCell(N)
     D12 = cls.SquareCell(N)
@@ -51,6 +51,8 @@ def LassoAnyonsRobin(N, alpha):
 
     phase = np.exp(1j*np.pi*alpha)
 
+    C.alpha = alpha
+
     C.glue(gluing1)
     C.glue_with_branch_cut(gluing2, phase)
 
@@ -59,25 +61,82 @@ def LassoAnyonsRobin(N, alpha):
 
     return C
 
+def ArrangeLassoPlots(C):
+
+    C.plot_dim = (2,2)
+
+    C.figuresize = (8,6)
+
+    for cell in C.cells:
+        if cell.indices == (1,1):
+            cell.plot_loc = (1,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,2):
+            cell.plot_loc = (0,0)
+            cell.use_x_labels = False
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,2):
+            cell.plot_loc = (0,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = False
+            pass
+        else:
+            pass
+        pass
+
+    C.plots_off = [(1,1)]
+
+    return None
+
 if __name__ == "__main__":
     # Main
 
-    N = 80
+    N = 20
     h = (np.pi)/(N-1)
-    a = 0.999
+    alpha = 0.0
 
-    C = LassoAnyonsRobin(N,a)
+    #C = LassoAnyonsContact(N,alpha)
 
-    C.robin_constant = np.tan(np.pi*a/2)
+    #C.robin_constant = np.tan(np.pi*alpha/2)
+
+    #C.robin_constant = 0
+
+
+
+    C = LassoAnyonsHardcore(N,alpha)
+    #C.robin_constant = 0
+
+    # Eigenvalues filepath
+    eigs_path = "lasso_hardcore_eigenvalues/lasso_N"+str(N)+"_alpha"+str(alpha)
+    # Eigenstates filepath
+    states_path = "lasso_hardcore_states/lasso_N"+str(N)+"_alpha"+str(alpha)+"_"
+
+    # # Neumann Eigenvalues filepath
+    # eigs_path = "lasso_neumann_eigenvalues/lasso_N"+str(N)+"_alpha"+str(alpha)
+    # # Neumann Eigenstates filepath
+    # states_path = "lasso_neumann_states/lasso_N"+str(N)+"_alpha"+str(alpha)+"_"
+
+    # Load the eigenvalues
+    #C.load_eigenvalues(eigs_path,override_directory_path=True)
+    # Load the eigenstates
+    #C.load_states(states_path,override_directory_path=True)
 
     C.gen_lapl()
 
-    #C.print_eqs()
+    C.lapl_solve(h, N_eigs=50)
 
-    C.lapl_solve(h, N_eigs=10)
+    # Save the eigenvalues
+    #C.save_eigenvalues(eigs_path)
+    # Save the eigenstates
+    #C.save_states(states_path)
+
     spec = C.spectrum
-    spec.sort()
+    #spec.sort()
     print(spec)
-    C.plot_states(0, plotting_method="contour",realimag="real")
+    ArrangeLassoPlots(C)
+    C.plot_states(0, plotting_method="surface", realimag="real", N_levels=20)
 
     pass

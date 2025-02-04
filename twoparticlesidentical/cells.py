@@ -33,6 +33,9 @@ class SquareCell:
         self.indices = None
         self.eigenstates = None
         self.cell_coords_constructed = False
+        self.plot_loc = (0,0)
+        self.use_x_labels = True
+        self.use_y_labels = True
 
         return None
 
@@ -263,6 +266,7 @@ class Edge:
         self.domain = domain
         self.edge = edge_nodes
         self.eliminated = False
+        self.strongly_eliminated = False
 
         return None
 

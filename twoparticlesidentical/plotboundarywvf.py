@@ -15,7 +15,7 @@ import ygraph as yga
 import lasso as lsa
 import dumbbell as db
 
-def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, state_number=None):
+def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, state_number=None,extrapolate_to_origin=False):
     """
     Plot the wavefunction on the boundary of the given complex.
 
@@ -36,7 +36,26 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
         pass
     else:
         pass
-    data = complex.plot_states(state_number, return_data=True, show_plots=False)
+    
+    data_real = complex.plot_states(state_number, return_data=True, show_plots=False, realimag="real")
+    data_imag = complex.plot_states(state_number, return_data=True, show_plots=False, realimag="imag")
+
+    data = []
+    for i in range(len(data_real)):
+        x = data_real[i][0]
+        y = data_real[i][1]
+        z_real = data_real[i][2]
+        z_imag = data_imag[i][2]
+        #tuple_real = data_real[i]
+        #tuple_imag = data_imag[i]
+        #real_part = np.array(tuple_real)
+        #imag_part = np.array(tuple_imag)
+        z = z_real + 1j*z_imag
+        vals_tuple = (x, y, z)
+        data.append(vals_tuple)
+        #data.append(data_real[i] + 1j*data_imag[i])
+        pass
+
 
     psis = []
     axis_coords = []
@@ -54,7 +73,14 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
             edge_length = (cell.N)-2
             pass
         elif type(cell) == cls.TriangleCell:
-            edge_length = (cell.N)-3
+            if complex.diagonal_boundary_condition == "neumann" or complex.diagonal_boundary_condition == "robin":
+                edge_length = (cell.N)-2
+                pass
+            elif complex.diagonal_boundary_condition == "dirichlet":
+                edge_length = (cell.N)-3
+                pass
+            else:
+                raise Exception("Unknown diagonal boundary condition")
             pass
         else:
             raise Exception("Unknown cell type")
@@ -84,7 +110,13 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
             if edge == cell.x0:
                 psi = zs[:edge_length]
                 # Add on an extra zero to the beginning of the array
-                psi = np.concatenate(([0],psi))
+                if complex.diagonal_boundary_condition == "neumann" or complex.diagonal_boundary_condition == "robin":
+                    pass
+                elif complex.diagonal_boundary_condition == "dirichlet":
+                    psi = np.concatenate(([0],psi))
+                    pass
+                else:
+                    raise Exception("Unknown diagonal boundary condition")
                 pass
             elif edge == cell.y1:
                 ids = []
@@ -95,22 +127,30 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
                     pass
                 psi = zs[ids]
                 # Add on an extra zero to the end of the array
-                psi = np.concatenate((psi,[0]))
+                if complex.diagonal_boundary_condition == "neumann" or complex.diagonal_boundary_condition == "robin":
+                    pass
+                elif complex.diagonal_boundary_condition == "dirichlet":
+                    psi = np.concatenate((psi,[0]))
+                    pass
+                else:
+                    raise Exception("Unknown diagonal boundary condition")
                 pass
             else:
                 raise Exception("Unknown edge")
-                pass
             edge_length += 1
             pass
         else:
             raise Exception("Unknown cell type")
-            pass
 
-        psis.append(np.abs(psi))
+        #psis.append(np.abs(psi))
+        psis.append(psi)
         pass
 
     # Calculate the average value of the wavefunction on the edge
     psi = np.mean(psis, axis=0)
+
+    # Convert wavefunction to absolute value
+    psi = np.abs(psi)
 
     # Enable this line for the lasso graph to reverse the direction of the wavefunction on the edge
     if lasso:
@@ -123,13 +163,44 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     axis_coords = axis_coords[np.argmax([len(axis) for axis in axis_coords])]
     ys = axis_coords
 
+    if extrapolate_to_origin:
+        # Extrapolate the wavefunction to the origin
+        #poly = np.polyfit(ys[:10], psi[:10], deg=5)
+        #psi_0  = np.polyval(poly, 0)
+        #print(psi_0)
+        #psi = psi - psi_0
+        psi = psi - psi[0]
+        psi = psi[1:]
+        ys = ys - ys[0]
+        ys = ys[1:]
+        pass
+    elif not extrapolate_to_origin:
+        pass
+    else:
+        raise Exception("Unknown extrapolation type")
+
+
     # Plot the wavefunction on the edge
     plt.clf()
     z = np.abs(psi)- np.sin(np.pi*ys[:edge_length])*np.max(np.abs(psi))
-    approx = np.sin(np.pi*ys[:edge_length])*np.max(np.abs(psi))
-    plt.plot(ys[:edge_length], np.abs(psi))
+
+    # Find largest magnitude of the wavefunction
+    psi_min = np.min(psi)
+    psi_max = np.max(psi)
+    if np.abs(psi_min) > np.abs(psi_max):
+        max = psi_min
+        pass
+    elif np.abs(psi_min) < np.abs(psi_max):
+        max = psi_max
+        pass
+    else:
+        max = psi_max
+        pass
+    approx = np.sin(np.pi*ys[:edge_length])*max
+    #plt.plot(ys[:edge_length], np.abs(psi))
+    plt.plot(ys[:edge_length], psi)
     #plt.show()
-    plt.plot(ys[:edge_length], approx,color='red')
+    plt.plot(ys[:edge_length],approx,color='red')
 
     # Plot the wavefunction on the edge
     if show_plots:
@@ -140,8 +211,8 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     plt.clf()
     plt.scatter(np.log(ys[:edge_length]),np.log(np.abs(psi)))
 
-    # Calculate the slope of the line from first point points
-    degree = 2
+    # Calculate the slope of the line from first several points
+    degree = 4
     cutoff = 10
     polyfeatures = PolynomialFeatures(degree).fit_transform(ys[:cutoff].reshape(-1,1))
     logfeatures = np.log(np.abs(ys[:cutoff]).reshape(-1,1))
@@ -166,6 +237,9 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     plt.plot(np.log(r), polynomial, color='red')
     if show_plots:
         plt.show()
+        pass
+    else:
+        plt.close()
         pass
 
     return m[0]
@@ -203,7 +277,7 @@ def check_boundary_convergence(N_min, N_max):
 
     return None
 
-def ygraph_interpolation(N):
+def ygraph_hardcore_interpolation(N):
 
     alphas = np.linspace(0, 1, 25)
     h = (np.pi)/(N-1)
@@ -212,55 +286,109 @@ def ygraph_interpolation(N):
     gluing1s = []
     ms = []
     for alpha in alphas:
-        C = yga.YgraphAnyons(N, alpha)
-        states_filepath = "ygraph_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
-        eigenvalues_filepath = "ygraph_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
+        C = yga.YgraphAnyonsHardcore(N, alpha)
+        states_filepath = "ygraph_hardcore_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "ygraph_hardcore_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
         C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
         gluing = C.gluings[0]
         print("alpha = ", alpha)
+        yga.ArrangeYgraphPlots(C)
         m = plot_boundary_wavefunction(C,gluing,show_plots=False)
         ms.append(m)
         pass
 
     # Produce scatter plot of m against alpha
     plt.clf()
+    plt.plot(alphas, ms)
     plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
     plt.show()
 
     return None
 
-def bosons_ygraph_interpolation(N):
+def ygraph_neumann_interpolation(N):
 
     #alphas = np.linspace(0, 1, 25)
-    alphas = [0]
+    alphas = np.linspace(0, 1, 49)
     h = (np.pi)/(N-1)
 
     CYs = []
     gluing1s = []
     ms = []
     for alpha in alphas:
-        C = yga.YgraphBosonsFree(N, alpha)
-        states_filepath = "bosons_ygraph_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
-        eigenvalues_filepath = "bosons_ygraph_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
+        C = yga.YgraphAnyonsRobin(N, alpha)
+        C.robin_constant = 0
+        states_filepath = "ygraph_neumann_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "ygraph_neumann_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
         C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
         gluing = C.gluings[0]
         print("alpha = ", alpha)
-        m = plot_boundary_wavefunction(C,gluing,show_plots=True,state_number=2)
+        yga.ArrangeYgraphPlots(C)
+        m = plot_boundary_wavefunction(C,gluing,show_plots=True,extrapolate_to_origin=True)
         ms.append(m)
         pass
 
     # Produce scatter plot of m against alpha
     plt.clf()
+    plt.plot(alphas, ms)
     plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
     plt.show()
 
     return None
 
-def lasso_interpolation(N):
+def ygraph_robin_interpolation(N):
+
+    alphas = np.linspace(0, 1, 25)
+    h = (np.pi)/(N-1)
+
+    CYs = []
+    gluing1s = []
+    ms = []
+    for alpha in alphas:
+        C = yga.YgraphAnyonsRobin(N, alpha)
+        C.robin_constant = 1
+        states_filepath = "ygraph_robin_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "ygraph_robin_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
+        C.load_states(states_filepath)
+        C.load_eigenvalues(eigenvalues_filepath)
+        CYs.append(C)
+        gluing = C.gluings[0]
+        print("alpha = ", alpha)
+        yga.ArrangeYgraphPlots(C)
+        m = plot_boundary_wavefunction(C,gluing,show_plots=False,extrapolate_to_origin=True)
+        ms.append(m)
+        pass
+
+    # Produce scatter plot of m against alpha
+    plt.clf()
+    plt.plot(alphas, ms)
+    plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
+    plt.show()
+
+    return None
+
+def lasso_hardcore_interpolation(N):
 
     alphas = np.linspace(0, 1, 25)
     h = (np.pi)/(N-1)
@@ -268,9 +396,9 @@ def lasso_interpolation(N):
     CYs = []
     ms = []
     for alpha in alphas:
-        C = lsa.LassoAnyons(N, alpha)
-        states_filepath = "lasso_states/lasso_N" + str(N) + "_alpha" + str(alpha) + "_"
-        eigenvalues_filepath = "lasso_eigenvalues/lasso_N" + str(N) + "_alpha" + str(alpha)
+        C = lsa.LassoAnyonsHardcore(N, alpha)
+        states_filepath = "lasso_hardcore_states/lasso_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "lasso_hardcore_eigenvalues/lasso_N" + str(N) + "_alpha" + str(alpha)
         C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
@@ -283,35 +411,120 @@ def lasso_interpolation(N):
 
     # Produce scatter plot of m against alpha
     plt.clf()
+    plt.plot(alphas, ms)
     plt.scatter(alphas, ms)
     plt.show()
 
     return None
 
-def dumbbell_interpolation(N):
+def lasso_neumann_interpolation(N):
+
+    #alphas = np.linspace(0, 1, 25)
+    alphas = np.linspace(0, 1, 49)
+    h = (np.pi)/(N-1)
+
+    CYs = []
+    ms = []
+    for alpha in alphas:
+        C = lsa.LassoAnyonsContact(N, alpha)
+        C.robin_constant = 0
+        states_filepath = "lasso_neumann_states/lasso_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "lasso_neumann_eigenvalues/lasso_N" + str(N) + "_alpha" + str(alpha)
+        C.load_states(states_filepath)
+        C.load_eigenvalues(eigenvalues_filepath)
+        CYs.append(C)
+        #gluing = C.gluings_with_branch_cut[0][0]
+        gluing = C.gluings[0]
+        print("alpha = ", alpha)
+        m = plot_boundary_wavefunction(C,gluing,show_plots=True,lasso=True,extrapolate_to_origin=True)
+        ms.append(m)
+        pass
+
+    # Produce scatter plot of m against alpha
+    # Produce scatter plot of m against alpha
+    plt.clf()
+    plt.plot(alphas, ms)
+    plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
+    plt.show()
+
+    return None
+
+def lasso_robin_interpolation(N):
+
+    #alphas = np.linspace(0, 1, 25)
+    alphas = np.linspace(0, 1, 49)
+    h = (np.pi)/(N-1)
+
+    CYs = []
+    ms = []
+    for alpha in alphas:
+        C = lsa.LassoAnyonsContact(N, alpha)
+        C.robin_constant = 1
+        states_filepath = "lasso_robin_states/lasso_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "lasso_robin_eigenvalues/lasso_N" + str(N) + "_alpha" + str(alpha)
+        C.load_states(states_filepath)
+        C.load_eigenvalues(eigenvalues_filepath)
+        CYs.append(C)
+        #gluing = C.gluings_with_branch_cut[0][0]
+        gluing = C.gluings[0]
+        print("alpha = ", alpha)
+        m = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True,extrapolate_to_origin=True)
+        ms.append(m)
+        pass
+
+    # Produce scatter plot of m against alpha
+    # Produce scatter plot of m against alpha
+    plt.clf()
+    plt.plot(alphas, ms)
+    plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
+    plt.show()
+
+    return None
+
+def dumbbell_hardcore_interpolation(N):
     
         alphas = np.linspace(0, 1, 25)
         h = (np.pi)/(N-1)
     
         CYs = []
         ms = []
-        for alpha in alphas:
-            C = db.DumbbellAnyons(N, alpha)
-            states_filepath = "dumbbell_states/dumbbell_N" + str(N) + "_alpha" + str(alpha) + "_"
-            eigenvalues_filepath = "dumbbell_eigenvalues/dumbbell_N" + str(N) + "_alpha" + str(alpha)
+        for alpha1 in alphas:
+            alpha2 = 0.0
+            C = db.DumbbellAnyonsHardcore(N, alpha1, alpha2)
+            states_filepath = "dumbbell_hardcore_states/dumbbell_N" + str(N) + "_alpha1" + str(alpha1) + "_alpha2" + str(alpha2) + "_"
+            eigenvalues_filepath = "dumbbell_hardcore_eigenvalues/dumbbell_N" + str(N) + "_alpha1" + str(alpha1) + "_alpha2" + str(alpha2)
             C.load_states(states_filepath)
             C.load_eigenvalues(eigenvalues_filepath)
+            #C.gen_lapl()
+            #C.lapl_solve(h, N_eigs=2)
             CYs.append(C)
             #gluing = C.gluings_with_branch_cut[0][0]
             gluing = C.gluings[0]
-            print("alpha = ", alpha)
+            print("alpha = ", alpha1)
             m = plot_boundary_wavefunction(C,gluing,show_plots=False)
             ms.append(m)
             pass
     
         # Produce scatter plot of m against alpha
         plt.clf()
+        plt.plot(alphas, ms)
         plt.scatter(alphas, ms)
+        # X axis label
+        plt.xlabel(r"$\alpha$")
+        # Y axis label
+        plt.ylabel(r"$\beta$")
         plt.show()
     
         return None
@@ -320,9 +533,9 @@ if __name__ =="__main__":
 
     #check_boundary_convergence(50, 100)
 
-    N = 70
+    N = 100
     h = (np.pi)/(N-1)
-    alpha = 1.0
+    #alpha = 1.0
 
     #C = db.DumbbellAnyons(N, alpha)
 
@@ -352,9 +565,13 @@ if __name__ =="__main__":
 
     #plot_boundary_wavefunction(C, gluing1)
 
-    #ygraph_interpolation(N)
-    #bosons_ygraph_interpolation(N)
-    #lasso_interpolation(N)
-    dumbbell_interpolation(N)
+    #ygraph_hardcore_interpolation(N)
+    #ygraph_neumann_interpolation(N)
+    #ygraph_robin_interpolation(N)
+    #lasso_hardcore_interpolation(N)
+    #lasso_neumann_interpolation(N)
+    #lasso_robin_interpolation(N)
+    #dumbbell_interpolation(N)
+    dumbbell_hardcore_interpolation(N)
 
     pass
