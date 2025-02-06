@@ -123,7 +123,7 @@ def ArrangeYgraphPlots(C):
 if __name__ == "__main__":
     # Main
 
-    N = 20
+    N = 100
     h = (np.pi)/(N-1)
     alpha = 0.0
 
@@ -148,9 +148,9 @@ if __name__ == "__main__":
     #CY = YgraphAnyonsRobin(N,alpha)
     #CY.robin_constant = 0
 
-    CY.gen_lapl()
+    #CY.gen_lapl()
 
-    CY.lapl_solve(h, N_eigs=50)
+    #CY.lapl_solve(h, N_eigs=50)
 
     # Save the eigenvalues
     #CY.save_eigenvalues(eigs_path)
@@ -158,9 +158,9 @@ if __name__ == "__main__":
     #CY.save_states(states_path)
 
     # Load the eigenvalues
-    #CY.load_eigenvalues(eigs_path, override_directory_path=False)
+    CY.load_eigenvalues(eigs_path, override_directory_path=False)
     # Load the eigenstates
-    #CY.load_states(states_path, override_directory_path=False)
+    CY.load_states(states_path, override_directory_path=False)
     spec = CY.spectrum
     print(spec)
     print(spec[6])
