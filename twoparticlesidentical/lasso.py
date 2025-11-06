@@ -94,9 +94,9 @@ def ArrangeLassoPlots(C):
 if __name__ == "__main__":
     # Main
 
-    N = 20
+    N = 80
     h = (np.pi)/(N-1)
-    alpha = 0.0
+    alpha = 0
 
     #C = LassoAnyonsContact(N,alpha)
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     C.gen_lapl()
 
-    C.lapl_solve(h, N_eigs=50)
+    C.lapl_solve(h, N_eigs=2)
 
     # Save the eigenvalues
     #C.save_eigenvalues(eigs_path)
@@ -137,6 +137,6 @@ if __name__ == "__main__":
     #spec.sort()
     print(spec)
     ArrangeLassoPlots(C)
-    C.plot_states(0, plotting_method="surface", realimag="real", N_levels=20)
+    C.plot_states(0, plotting_method="contour", realimag="abs", N_levels=40)
 
     pass

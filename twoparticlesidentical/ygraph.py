@@ -77,6 +77,38 @@ def YgraphAnyonsRobin(N, alpha):
 
     return CY
 
+def YgraphDifferentLengthsHardcore(N,N2,N3):
+
+    D11 = cls.TriangleCell(N)
+    D22 = cls.TriangleCell(N2)
+    D33 = cls.TriangleCell(N3)
+    D12 = cls.SquareCell(N2,N)
+    D13 = cls.SquareCell(N3,N)
+    D23 = cls.SquareCell(N3,N2)
+
+    D11.indices = (1,1)
+    D22.indices = (2,2)
+    D33.indices = (3,3)
+    D12.indices = (1,2)
+    D13.indices = (1,3)
+    D23.indices = (2,3)
+
+    CY = configs.ConfigurationSpace([D11,D22,D33,D12,D13,D23])
+
+    gluing1 = [D11.x0, D12.y0, D13.y0]
+    gluing2 = [D33.x0, D13.x0, D23.x0]
+    gluing3 = [D22.x0, D23.y0, D12.x0]
+
+    CY.glue(gluing1)
+    CY.glue(gluing2)
+    CY.glue(gluing3)
+
+    CY.exterior_bc("dirichlet")
+    CY.diagonal_bc("dirichlet")
+
+    return CY
+
+
 def ArrangeYgraphPlots(C):
 
     C.plot_dim = (2,3)
@@ -124,8 +156,10 @@ if __name__ == "__main__":
     # Main
 
     N = 100
+    N2 = 40
+    N3 = 80
     h = (np.pi)/(N-1)
-    alpha = 0.0
+    alpha = 0.5
 
     CY = YgraphAnyonsHardcore(N,alpha)
 
@@ -140,17 +174,19 @@ if __name__ == "__main__":
 
     #CY = YgraphAnyonsHardcore(N,alpha)
 
+    #CY = YgraphDifferentLengthsHardcore(N,N2,N3)
+
     # Eigenvalues filepath
     #eigs_path = "ygraph_neumann_eigenvalues/ygraph_N"+str(N)+"_alpha"+str(alpha)
     # Eigenstates filepath
     #states_path = "ygraph_neumann_states/ygraph_N"+str(N)+"_alpha"+str(alpha)+"_"
 
     #CY = YgraphAnyonsRobin(N,alpha)
-    #CY.robin_constant = 0
+    #CY.robin_constant = 2
 
     #CY.gen_lapl()
 
-    #CY.lapl_solve(h, N_eigs=50)
+    #CY.lapl_solve(h, N_eigs=20)
 
     # Save the eigenvalues
     #CY.save_eigenvalues(eigs_path)
@@ -167,7 +203,7 @@ if __name__ == "__main__":
     spec.sort()
     print(spec)
     ArrangeYgraphPlots(CY)
-    CY.plot_states(0, plotting_method="surface", realimag="real", N_levels=20)
+    CY.plot_states(0, plotting_method="contour", realimag="phase", N_levels=20)
     #CY.plot_states(1)
     #CY.plot_states(2)
     #CY.plot_states(3)

@@ -41,10 +41,26 @@ def Square(N):
 
     return CW
 
+def Rectangle(N,N2):
+
+    D11 = cls.TriangleCell(N,N2)
+
+    D11.indices = (1,1)
+
+    CW = configs.ConfigurationSpace([D11])
+
+    CW.exterior_bc("dirichlet")
+    CW.diagonal_bc("dirichlet")
+
+    CW.gen_lapl()
+
+    return CW
+
 if __name__ == "__main__":
     # Main
 
-    N = 100
+    N = 50
+    N2 = 50
     h = (np.pi)/(N-1)
 
     CW = Wire(N)
