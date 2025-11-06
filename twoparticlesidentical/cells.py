@@ -8,7 +8,7 @@ import networkx as nx
 
 class SquareCell:
 
-    def __init__(self, length):
+    def __init__(self, length1, length2=None):
         """
         Initialize the SquareCell object with the given parameters.
 
@@ -18,8 +18,14 @@ class SquareCell:
         """
 
         # Creae a grid graph of the given dimensions.
-        self.N = length
-        self.G = nx.grid_graph(dim=(length,length))
+        self.N = length1
+        if length2 is None:
+            length2 = length1
+            pass
+        else:
+            pass
+        self.N2 = length2
+        self.G = nx.grid_graph(dim=(length1,length2))
 
         # Find the corners and edges of the domain.
         self.corners = self.find_corners()
@@ -50,9 +56,10 @@ class SquareCell:
             corners: A list of the nodes corresponding to the corners of the domain.
         """
 
-        N = self.N
+        N1 = self.N
+        N2 = self.N2
         nodes_list = list(self.G.nodes())
-        corner_indices = [0,N-1,(N**2)-N,(N**2)-1]
+        corner_indices = [0,N1-1,(N1*N2)-N1,(N1*N2)-1]
         corner_indices.sort()
 
         corners = []
@@ -74,30 +81,31 @@ class SquareCell:
             edges: A list of the nodes corresponding to each edge of the domain.
         """
         
-        N = self.N
+        N1 = self.N
+        N2 = self.N2
         nodes_list = list(self.G.nodes())
         
         # Find the nodes on the first y-axis
         x0_nodes = []
-        for x in range(1,N-1):
+        for x in range(1,N1-1):
             x0_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the first x-axis
         y0_nodes = []
-        for x in range(N,(N**2)-N,N):
+        for x in range(N1,(N1*N2)-N1,N1):
             y0_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the opposite y-axis
         x1_nodes = []
-        for x in range((N**2)-N+1,(N**2)-1):
+        for x in range((N1*N2)-N1+1,(N1*N2)-1):
             x1_nodes.append(nodes_list[x])
             pass
         
         # Find the nodes on the opposite x-axis
         y1_nodes = []
-        for x in range(2*N-1,N**2-1,N):
+        for x in range(2*N1-1,N1*N2-1,N1):
             y1_nodes.append(nodes_list[x])
             pass
 
@@ -151,7 +159,7 @@ class SquareCell:
 
 class TriangleCell(SquareCell):
 
-    def __init__(self, length):
+    def __init__(self, length1, length2=None):
         """
         Initialize the TriangleCell object with the given parameters.
 
@@ -162,14 +170,14 @@ class TriangleCell(SquareCell):
 
         # Create a grid graph of the given dimensions.
 
-        super().__init__(length)
+        super().__init__(length1,length2)
 
         # Find the diagonal of the domain.
-        diag = self.find_diag()
+        diag, diag_ids = self.find_diag()
         self.edges.append(diag)
 
         # Delete nodes beyond the diagonal from the domain in order to form a triangular cell.
-        self.G = self.form_triangle()
+        self.G = self.form_triangle(diag_ids)
 
         return None
 
@@ -185,13 +193,31 @@ class TriangleCell(SquareCell):
         """
 
         # Initialize variables.
-        N = self.N
+        N1 = self.N
+        N2 = self.N2
         nodes_list = list(self.G.nodes())
+
+        if N1 % 2 == 0 and N2 % 2 == 0:
+            pass
+        else:
+            raise ValueError("The side lengths of the square must be even.")
 
         # Find the nodes along the diagonal x=y.
         diag_nodes = []
-        for x in range(N+1,(N**2 - 1), N + 1):
-            diag_nodes.append(nodes_list[x])
+        # Get the x-y coordinates of the diagonal nodes        
+
+        diag_ids = []
+        for x in np.linspace(0,(N1*N2 - 1), N2):#range(0,(N1*N2 - 1), N2 - 1):
+            if x == 0:
+                continue
+            elif x == (N1*N2 - 1):
+                continue
+            else:
+                pass
+            # Round x to the nearest integer
+            idx = int(round(x))
+            diag_ids.append(idx)
+            diag_nodes.append(nodes_list[idx])
             pass
 
         # Create an edge object for the diagonal.
@@ -200,9 +226,9 @@ class TriangleCell(SquareCell):
         # Create a class variable for the diagonal.
         self.diag = diag
 
-        return diag
+        return diag, diag_ids
 
-    def form_triangle(self):
+    def form_triangle(self,diag_ids):
         """
         Form a triangular domain from the square domain.
 
@@ -210,7 +236,8 @@ class TriangleCell(SquareCell):
             self: The TriangleCell object.
         """
 
-        N = self.N
+        N1 = self.N
+        N2 = self.N2
         G = self.G
 
         # Find the nodes in the graph corresponding to the corners of the domain.
@@ -224,8 +251,10 @@ class TriangleCell(SquareCell):
 
         # Create list of indices to drop from the Laplacian matrix.
         drop_indices = []
-        for i in range (1,N):
-            drop_indices += [d for d in range(i*N,i*(N+1))]
+        diag_ids.append(N1*N2 - 1)
+        for i in range (1,N2):
+            diag_idx = diag_ids[i-1]
+            drop_indices += [d for d in range(i*N1,diag_idx)]
             pass
 
         # Identify the nodes to drop from the graph.
@@ -238,7 +267,7 @@ class TriangleCell(SquareCell):
         self.dropped_indices = drop_indices
 
         # Delete corners and extra nodes from the objects's data.
-        self.corners.remove(nodes_list[N*(N-1)])
+        self.corners.remove(nodes_list[N1*(N2-1)])
 
         self.edges.remove(self.y0)
         self.y0 = None
@@ -307,12 +336,12 @@ class Edge:
 if __name__=="__main__":
     # Main
     
-    N = 5 # The side length of the square
+    N = 6 # The side length of the square
     
     # Scaling factor
     h = (np.pi)/(N-1)
     
-    D = TriangleCell(N)
+    D = TriangleCell(N,N-2)
     print(D.G)
     print(D.G.nodes())
     print(D.corners)

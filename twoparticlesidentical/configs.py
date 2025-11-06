@@ -52,6 +52,12 @@ class ConfigurationSpace:
         self.exterior_boundary_condition = None
 
         self.alpha = 0
+
+        mins = []
+        for cell in cells:
+            mins.append(np.min((cell.N, cell.N2)))
+        pass
+        self.Nmin = np.min(mins)
         
         return None
 
@@ -299,17 +305,33 @@ class ConfigurationSpace:
         cells = self.cells
 
         if type(domain) == cls.SquareCell:
-            N = domain.N
-            coords = np.arange(N**2)
+            N1 = domain.N
+            N2 = domain.N2
+            coords = np.arange(N1*N2)
             pass
         elif type(domain) == cls.TriangleCell:
-            N = domain.N
-            drop_indices = []
-            for i in range (1,N):
-                drop_indices += [d for d in range(i*N,i*(N+1))]
+            N1 = domain.N
+            N2 = domain.N2
+
+            # Find the indices of the nodes along the diagonal
+            diag_ids = []
+            for x in np.linspace(0,(N1*N2 - 1), N2):
+                if x == 0:
+                    continue
+                else:
+                    pass
+                # Round x to the nearest integer
+                idx = int(round(x))
+                diag_ids.append(idx)
                 pass
 
-            coords = np.arange(N**2 - len(drop_indices))
+            # Find all nodes on the lower right half of the triangle
+            drop_indices = []
+            for i in range (1,N2+1):
+                drop_indices += [d for d in range(i*N1,diag_ids[i-1])]
+                pass
+
+            coords = np.arange(N1*N2 - len(drop_indices))
 
             pass
         else:
@@ -1063,9 +1085,14 @@ class ConfigurationSpace:
             pass
 
         N = cell.N
+        N2 = cell.N2
 
-        x = np.linspace(0,1,N,endpoint=True)
-        y = np.linspace(0,1,N,endpoint=True)
+        min = self.Nmin
+        L1 = N/min
+        L2 = N2/min
+
+        x = np.linspace(0,L1,N,endpoint=True)
+        y = np.linspace(0,L2,N2,endpoint=True)
 
         xx, yy = np.meshgrid(x,y)
         grid = np.array((xx.ravel(), yy.ravel())).T
@@ -1075,10 +1102,11 @@ class ConfigurationSpace:
             g = np.flip(grid,axis=1)
 
             indices = []
-            for j in range(0,N):
-                indices += list(range((j)*(N),j*(N)+(j)))
-                pass
+            #for j in range(0,N):
+            #    indices += list(range((j)*(N),j*(N)+(j)))
+            #    pass
             
+            indices = cell.dropped_indices
             coords = np.delete(g,indices,axis=0)
 
             # Remove the nodes that have been eliminated
@@ -1136,7 +1164,7 @@ class ConfigurationSpace:
 
         return None
     
-    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False,plotting_method="surface", realimag="abs", N_levels=20):
+    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False, plotting_method="surface", realimag="abs", N_levels=20):
         # Plot the states of the system
 
         if solve_lapl == False:
@@ -1191,8 +1219,6 @@ class ConfigurationSpace:
         data = []
 
         if plotting_method == "surface":
-            #fig = plt.figure()
-            #ax = fig.add_subplot(projection='3d')
             pass
         elif plotting_method == "contour":
             dim1, dim2 = self.plot_dim
@@ -1247,6 +1273,11 @@ class ConfigurationSpace:
             if plotting_method == "surface":
                 ax = plt.figure().add_subplot(projection='3d')
                 ax.plot_trisurf(coords[:,0],coords[:,1], state, linewidth=0.2, antialiased=True, cmap="Spectral")
+                # Adjust aspect ratio
+                #min = np.min((cell.N, cell.N2))
+                L1 = cell.N/self.Nmin
+                L2 = cell.N2/self.Nmin
+                ax.set_box_aspect([L2, L1, 1])  # (X, Y, Z) aspect ratio
                 ax.set_zlabel(r'$\psi$'+str(indices)+"(x,y)",rotation=90)
                 ax.ticklabel_format(axis='z',style='plain',useOffset=True)
                 ax.zaxis.labelpad=10
@@ -1257,13 +1288,24 @@ class ConfigurationSpace:
                 #dim1, dim2 = self.plot_dim
                 #fig, ax = plt.subplots(dim1, dim2)
                 sb1, sb2 = cell.plot_loc
-                contour_plot = ax[sb1,sb2].tricontourf(triang, state, levels=levels, cmap=plot_cmp)
-                contour_lines = ax[sb1,sb2].tricontour(triang, state, levels=levels, colors='black', linewidths=0.4)
+                if self.plot_dim == (1,1):
+                    contour_plot = ax.tricontourf(triang, state, levels=levels, cmap=plot_cmp)
+                    contour_lines = ax.tricontour(triang, state, levels=levels, colors='black', linewidths=0.4)
+                    pass
+                else:
+                    contour_plot = ax[sb1,sb2].tricontourf(triang, state, levels=levels, cmap=plot_cmp)
+                    contour_lines = ax[sb1,sb2].tricontour(triang, state, levels=levels, colors='black', linewidths=0.4)
+                    pass
                 #cbar = fig.colorbar(contour_plot, ax=ax)
                 id1, id2 = indices
                 strid = str(id1)+","+str(id2)
                 title = r'$\psi_{{{}}}$'.format(strid)
-                ax[sb1,sb2].set_title(title, fontsize=12)
+                if self.plot_dim == (1,1):
+                    ax.set_title(title, fontsize=12)
+                    pass
+                else:
+                    ax[sb1,sb2].set_title(title, fontsize=20)
+                    pass
                 if type(cell) == cls.TriangleCell:
                     xs = np.linspace(coords[0,0],coords[-1,0],100)
                     if cell.diag.eliminated == True and cell.diag.strongly_eliminated == True:
@@ -1274,8 +1316,13 @@ class ConfigurationSpace:
                         pass
                     else:
                         ys = xs
-                        pass                    
-                    line = ax[sb1,sb2].plot(xs,ys,color='black',linewidth=0.5)
+                        pass 
+                    if self.plot_dim == (1,1):
+                        line = ax.plot(xs,ys,color='black',linewidth=0.5)
+                        pass
+                    else:
+                        line = ax[sb1,sb2].plot(xs,ys,color='black',linewidth=0.5)
+                        pass
                     pass
                 pass
             else:
@@ -1284,13 +1331,15 @@ class ConfigurationSpace:
             id1 , id2 = indices
             xl = fr'$x_{{e_{{{id1}}}}}$'
             yl = fr'$y_{{e_{{{id2}}}}}$'
-            if plotting_method == "surface":
+            if plotting_method == "surface" or (plotting_method == "contour" and self.plot_dim == (1,1)):
                 ax.set_xlabel(xl)
                 ax.set_ylabel(yl)
                 pass
             elif plotting_method == "contour":
                 if cell.use_x_labels == True:
-                    ax[sb1,sb2].set_xlabel(xl)
+                    ax[sb1,sb2].set_xlabel(xl,fontsize=16)
+                    # Make x ticks larger
+                    ax[sb1,sb2].tick_params(axis='x', labelsize=12)
                     pass
                 elif cell.use_x_labels == False:
                     ax[sb1,sb2].get_xaxis().set_visible(False)
@@ -1298,9 +1347,12 @@ class ConfigurationSpace:
                 else:
                     pass
                 if cell.use_y_labels == True:
-                    ax[sb1,sb2].set_ylabel(yl)
+                    ax[sb1,sb2].set_ylabel(yl,fontsize=16)
+                    # Make y ticks larger
+                    ax[sb1,sb2].tick_params(axis='y', labelsize=12)
                     # Rotate y-axis label
                     ax[sb1,sb2].yaxis.label.set_rotation(0)
+                    ax[sb1, sb2].yaxis.set_label_coords(-0.5, 0.5)
                     pass
                 elif cell.use_y_labels == False:
                     ax[sb1,sb2].get_yaxis().set_visible(False)
@@ -1336,14 +1388,21 @@ class ConfigurationSpace:
                 #plt.show()
                 pass
             elif plotting_method == "contour":
-                for po in self.plots_off:
-                    po1, po2 = po
-                    ax[po1,po2].axis('off')
+                if self.plot_dim == (1,1):
+                    cbar = fig.colorbar(contour_plot, ax=ax)
+                    plt.show()
                     pass
-                #fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.3, hspace=0.4)
-                cbar = fig.colorbar(contour_plot, ax=ax)
-                #plt.savefig("foo.pdf", bbox_inches="tight")
-                plt.show()
+                else:
+                    for po in self.plots_off:
+                        po1, po2 = po
+                        ax[po1,po2].axis('off')
+                        pass
+                    #fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.3, hspace=0.4)
+                    cbar = fig.colorbar(contour_plot, ax=ax)
+                    cbar.ax.tick_params(labelsize=12)
+                    #plt.savefig("foo.pdf", bbox_inches="tight")
+                    plt.show()
+                    pass
                 pass
             else:
                 raise Exception("Invalid plotting method")
@@ -1351,7 +1410,7 @@ class ConfigurationSpace:
         else:
             pass
 
-        plt.close()
+        plt.close('all')
         plt.clf()
         
         if return_data == True:
@@ -1501,29 +1560,27 @@ class ConfigurationSpace:
 if __name__ == "__main__":
     # Main
 
-    N = 20
+    N = 50
 
     h = (np.pi)/(N-1)
     
     D11 = cls.TriangleCell(N)
-    #D12 = cls.SquareCell(N)
-    D21 = cls.SquareCell(N)
+    D12 = cls.SquareCell(N)
     D22 = cls.TriangleCell(N)
 
     D11.indices = (1,1)
-    D21.indices = (2,1)
+    D12.indices = (1,2)
     D22.indices = (2,2)
 
-    C = ConfigurationSpace([D11,D21,D22])
-    #C = ConfigurationSpace([D21])
+    C = ConfigurationSpace([D11,D12,D22])
 
-    gluing1 = [D11.x1,D21.x0]
-    gluing2 = [D21.y1,D22.y0]
+    gluing1 = [D11.y1,D12.y0]
+    gluing2 = [D12.x1,D22.x0]
     C.glue(gluing1)
     C.glue(gluing2)
 
-    C.exterior_boundary_condition("dirichlet")
-    C.diagonal_boundary_condition("dirichlet")
+    #C.exterior_boundary_condition("dirichlet")
+    #C.diagonal_boundary_condition("dirichlet")
     C.gen_lapl()
     lapl = C.sL
     #print(lapl.toarray())
@@ -1532,460 +1589,11 @@ if __name__ == "__main__":
     #spec = C.lapl_spectrum(h,2,10)
     #print(spec)
 
-    C.plot_states(0,10)
-    spec = C.spectrum
-    spec.sort()
-    print(spec)
+    #C.plot_states(0,10)
+    #spec = C.spectrum
+    #spec.sort()
+    #print(spec)
 
 
 
     pass
-
-
-
-
-
-
-
-# def apply_neumann(self, boundary):
-    #     """
-    #     Apply Neumann boundary conditions in the Laplacian matrix to a particular edge in the configuration space.
-
-    #     Args:
-    #         self: The ConfigurationSpace object
-    #         boundary (Edge): The edge in the configuration space to apply Dirichlet boundary conditions to.
-    #     """
-        
-    #     self.check_if_lapl_gen()
-
-    #     domain = boundary.domain
-    #     edge = boundary.edge
-        
-    #     N = domain.N
-    #     L = self.L
-    #     cells = self.cells
-    #     el = self.eliminated_vars
-    #     el_dict = self.el_dict
-
-    #     edge_coords = boundary.edge_indices
-        
-    #     edge_indices = np.array(edge_coords)
-
-    #     if type(domain) == cls.SquareCell:
-    #         if boundary == domain.x0:
-    #             # Apply Neumann boundary conditions to the x0 boundary of the square cell
-    #             neumann_ids = edge_indices + N
-    #             pass
-    #         elif boundary == domain.y0:
-    #             # Apply Neumann boundary conditions to the y0 boundary of the square cell
-    #             neumann_ids = edge_indices + 1
-    #             pass
-    #         elif boundary == domain.x1:
-    #             # Apply Neumann boundary conditions to the x1 boundary of the square cell
-    #             neumann_ids = edge_indices - N
-    #             pass
-    #         elif boundary == domain.y1:
-    #             # Apply Neumann boundary conditions to the y1 boundary of the square cell
-    #             neumann_ids = edge_indices - 1
-    #             pass
-    #         else:
-    #             raise Exception("Unknown boundary")
-    #         pass
-    #     elif type(domain) == cls.TriangleCell:
-    #         if boundary == domain.x0:
-    #             # Apply Neumann boundary conditions to the x0 boundary of the triangle cell
-    #             neumann_ids = edge_indices + (domain.N - 1)
-    #             pass
-    #         elif boundary == domain.y1:
-    #             # Apply Neumann boundary conditions to the y1 boundary of the triangle cell
-    #             neumann_ids = edge_indices - 1
-    #             pass
-    #         elif boundary == domain.diag:
-    #             # Apply Neumann boundary conditions to the diagonal boundary of the triangle cell
-    #             pass
-    #         else:
-    #             raise Exception("Unknown boundary")
-    #         pass
-    #     else:
-    #         raise Exception("Unknown domain type")
-
-        
-    #     if type(domain) == cls.TriangleCell and boundary == domain.diag:
-    #         # Generate a list of all nodes adjacent to the diagonal
-            
-    #         idx0 = edge_indices[0] - ( N - 1 )
-    #         off_diagonal = np.array([idx0])
-    #         off_diagonal = np.append(off_diagonal, edge_indices + 1)
-
-    #         # Subtract 1 to the diagonal elements corresponding to the Neumann boundary conditions
-
-    #         # Get the current diagonal elements of L
-    #         diagonal = L.diagonal()
-
-    #         # Increment the diagonal elements at positions in neumann_ids
-    #         diagonal[off_diagonal[1:-1]] -= 2
-
-    #         # Set the updated diagonal back to the matrix
-    #         L.setdiag(diagonal)
-
-    #         # Remove any elements of off_diagonal that are in el
-    #         if off_diagonal[0] in el:
-    #             # g = el_dict[off_diagonal[0]].toarray().flatten()
-
-    #             # locs = g.nonzero()[0]
-
-    #             # L[locs] += g
-
-    #             # ratio = 1/g[edge_indices[0]]
-
-    #             # print(ratio)
-
-    #             # vec = g * ratio
-
-    #             # vec = vec * 1/(ratio-1)
-
-    #             # vec[edge_indices[0]] = 0
-
-    #             # vec = sp.sparse.csr_matrix(vec)
-
-    #             # print(vec)
-
-    #             # # Remove diagonal[0] from locs
-    #             # locs = locs[locs != edge_indices[0]]
-
-    #             # mat = np.tile(vec.toarray(), (len(locs), 1))
-
-    #             # print(mat.shape)
-
-    #             # L[locs] -= mat
-
-    #             col = L[:, edge_indices[0]].toarray()#.flatten()
-
-    #             col[edge_indices[0]] = 0
-
-    #             L[:,off_diagonal[1]] += col
-
-    #             L[edge_indices[0]] = 0
-
-    #             pass
-    #         elif off_diagonal[-1] in el:
-    #             # g = el_dict[off_diagonal[-1]].toarray().flatten()
-
-    #             # locs = g.nonzero()[0]
-
-    #             # L[locs] += g
-
-    #             # ratio = 1/g[edge_indices[-1]]
-
-    #             # print(ratio)
-
-    #             # vec = g * ratio
-
-    #             # vec = vec * 1/(ratio-1)
-
-    #             # vec[edge_indices[-1]] = 0
-
-    #             # vec = sp.sparse.csr_matrix(vec)
-
-    #             # print(vec)
-
-    #             # # Remove diagonal[-1] from locs
-    #             # locs = locs[locs != edge_indices[-1]]
-
-    #             # print(L[locs].shape)
-    #             # print(vec.shape)
-
-    #             # mat = np.tile(vec.toarray(), (len(locs), 1))
-
-    #             # print(mat.shape)
-
-    #             # L[locs] -= mat
-
-    #             col = L[:, edge_indices[-1]].toarray()#.flatten()
-
-    #             col[edge_indices[-1]] = 0
-
-    #             L[:,off_diagonal[-2]] += col
-
-    #             L[edge_indices[-1]] = 0
-
-    #             pass
-    #         else:
-    #             pass
-
-    #         pass
-    #     elif type(domain) == cls.TriangleCell or type(domain) == cls.SquareCell:
-    #         # Subtract 1 to the diagonal elements corresponding to the Neumann boundary conditions
-
-    #         # Get the current diagonal elements of L
-    #         diagonal = L.diagonal()
-
-    #         # Increment the diagonal elements at positions in neumann_ids
-    #         diagonal[neumann_ids] -= 1
-
-    #         # Set the updated diagonal back to the matrix
-    #         L.setdiag(diagonal)
-    #         pass
-    #     else:
-    #         raise Exception("Unknown domain type")
-        
-
-    #     L[edge_indices] = 0
-    #     L[:,edge_indices] = 0
-        
-    #     self.L = L
-        
-    #     el += edge_coords
-    #     el.sort()
-    #     self.eliminated_vars = el
-
-    #     # Quicker version of the code with using a loop
-    #     domain.removed_nodes += edge
-        
-    #     self.edges_with_bc_appl.append((domain,edge))
-        
-    #     return None
-
-    # def apply_neumann_old(self, boundary):
-    #     """
-    #     Apply Neumann boundary conditions in the Laplacian matrix to a particular edge in the configuration space.
-
-    #     Args:
-    #         self: The ConfigurationSpace object
-    #         boundary (Edge): The edge in the configuration space to apply Dirichlet boundary conditions to.
-    #     """
-        
-    #     self.check_if_lapl_gen()
-
-    #     domain = boundary.domain
-    #     edge = boundary.edge
-        
-    #     N = domain.N
-    #     L = self.L
-    #     cells = self.cells
-    #     el = self.eliminated_vars
-    #     el_dict = self.el_dict
-
-    #     edge_coords = boundary.edge_indices
-        
-    #     edge_indices = np.array(edge_coords)
-
-    #     if type(domain) == cls.SquareCell:
-    #         if boundary == domain.x0:
-    #             # Apply Neumann boundary conditions to the x0 boundary of the square cell
-    #             neumann_ids = edge_indices + N
-    #             pass
-    #         elif boundary == domain.y0:
-    #             # Apply Neumann boundary conditions to the y0 boundary of the square cell
-    #             neumann_ids = edge_indices + 1
-    #             pass
-    #         elif boundary == domain.x1:
-    #             # Apply Neumann boundary conditions to the x1 boundary of the square cell
-    #             neumann_ids = edge_indices - N
-    #             pass
-    #         elif boundary == domain.y1:
-    #             # Apply Neumann boundary conditions to the y1 boundary of the square cell
-    #             neumann_ids = edge_indices - 1
-    #             pass
-    #         else:
-    #             raise Exception("Unknown boundary")
-    #         pass
-    #     elif type(domain) == cls.TriangleCell:
-    #         if boundary == domain.x0:
-    #             # Apply Neumann boundary conditions to the x0 boundary of the triangle cell
-    #             neumann_ids = edge_indices + (domain.N - 1)
-    #             pass
-    #         elif boundary == domain.y1:
-    #             # Apply Neumann boundary conditions to the y1 boundary of the triangle cell
-    #             neumann_ids = edge_indices - 1
-    #             pass
-    #         elif boundary == domain.diag:
-    #             # Apply Neumann boundary conditions to the diagonal boundary of the triangle cell
-    #             pass
-    #         else:
-    #             raise Exception("Unknown boundary")
-    #         pass
-    #     else:
-    #         raise Exception("Unknown domain type")
-
-        
-    #     if type(domain) == cls.TriangleCell and boundary == domain.diag:
-    #         # Generate a list of all nodes adjacent to the diagonal
-            
-    #         idx0 = edge_indices[0] - ( N - 1 )
-    #         off_diagonal = np.array([idx0])
-    #         off_diagonal = np.append(off_diagonal, edge_indices + 1)
-
-    #         # Remove any elements of off_diagonal that are in el
-    #         #off_diagonal = [si for si in off_diagonal if si not in el]
-            
-    #         # Create a list of pairs of adjacent nodes along the off diagonal
-    #         off_diagonal_pairs =  np.column_stack((off_diagonal[:-1], off_diagonal[1:]))
-
-    #         # Convert L to complex
-    #         L = L.astype('complex')
-
-    #         # Replace all instances of an amplitude on the diagonal with the average of the adjacent amplitudes on the off-diagonal
-    #         for i, idx in enumerate(edge_indices):
-
-    #             # Find the rows where the idx column of L is non-zero
-    #             nzs = L[:, idx].nonzero()[0]
-    #             nzs = np.array(list(set(nzs)))
-
-    #             if i == 0:
-    #                 if idx - (N - 1) in el:
-    #                     g = el_dict[idx-(N-1)].toarray().flatten()
-    #                     end = off_diagonal[1]
-
-    #                     # Create zero vector of length L.shape[0]
-    #                     vec = np.zeros(L.shape[0], dtype='complex128')
-
-    #                     vec[end] = 1/2
-
-    #                     vec += 1/2 * g
-
-    #                     ratio = 1/(1 - vec[idx])
-    #                     vec = vec * ratio
-    #                     vec[idx] = 0
-
-    #                     vec = sp.sparse.csr_matrix(vec)
-
-    #                     # Update L to account for boundary conditions
-    #                     L[end] -= vec
-    #                     pass
-    #                 else:
-    #                     if nzs.size > 0:
-    #                         # Find the next component along the off-diagonal
-    #                         loc = off_diagonal[1]
-
-    #                         # Update the row in L with the corresponding value
-    #                         L[loc, loc] -= 1/2
-    #                         pass
-    #                     else:
-    #                         raise Exception("No non-zero elements in column")
-    #                     pass
-    #                 pass
-    #             elif i == len(edge_indices) - 1:
-    #                 # Check if any components of nzs are in the eliminated variables
-    #                 if idx + 1 in el:
-    #                     g = el_dict[idx+1].toarray().flatten()
-    #                     end = off_diagonal[-2]
-
-    #                     # Create zero vector of length L.shape[0]
-    #                     vec = np.zeros(L.shape[0], dtype='complex128')
-
-    #                     vec[end] = 1/2
-
-    #                     vec += 1/2 * g
-
-    #                     ratio = 1/(1 - vec[idx])
-    #                     vec = vec * ratio
-    #                     vec[idx] = 0
-
-    #                     vec = sp.sparse.csr_matrix(vec)
-
-    #                     # Update L to account for boundary conditions
-    #                     L[end] -= vec
-    #                     pass
-    #                 else:
-    #                     if nzs.size > 0:
-    #                         # Find the next component along the off-diagonal
-    #                         loc = off_diagonal[-2]
-
-    #                         # Update the row in L with the corresponding value
-    #                         L[loc, loc] -= 1/2
-    #                         pass
-    #                     else:
-    #                         raise Exception("No non-zero elements in column")
-    #                     pass
-    #                 pass
-    #             elif 1 <= i < len(edge_indices) - 1:
-    #                 # Find the rows where the ith column of L is non-zero
-    #                 if nzs.size > 0:
-    #                     # Get the indices of the adjacent nodes on the off-diagonal
-    #                     pair = np.array(off_diagonal_pairs[i])
-
-    #                     # Create numpy matrix of ones with dimension nzs size x pair size
-    #                     ones = np.ones((nzs.size, pair.size))
-
-    #                     # Update the rows in L with the corresponding values times the ones matrix
-    #                     L[nzs[:,np.newaxis], pair] -= 1/2 * ones
-    #                     pass
-    #                 else:
-    #                     pass
-    #                 pass
-    #             else:
-    #                 pass
-    #             pass
-    #         pass
-    #     elif type(domain) == cls.TriangleCell or type(domain) == cls.SquareCell:
-    #         # Add 1 to the diagonal elements corresponding to the Neumann boundary conditions
-
-    #         # Get the current diagonal elements of L
-    #         diagonal = L.diagonal()
-
-    #         # Increment the diagonal elements at positions in neumann_ids
-    #         diagonal[neumann_ids] -= 1
-
-    #         # Set the updated diagonal back to the matrix
-    #         L.setdiag(diagonal)
-    #         pass
-    #     else:
-    #         raise Exception("Unknown domain type")
-        
-
-    #     L[edge_indices] = 0
-    #     L[:,edge_indices] = 0
-        
-    #     self.L = L
-        
-    #     el += edge_coords
-    #     el.sort()
-    #     self.eliminated_vars = el
-
-    #     # Quicker version of the code with using a loop
-    #     domain.removed_nodes += edge
-        
-    #     self.edges_with_bc_appl.append((domain,edge))
-        
-    #     return None
-
-# def construct_coords_old(self,cell):
-    #     # Construct the non-eliminated coordinate system on each cell
-
-    #     if cell.cell_coords_constructed == True:
-    #         return None
-    #     else:
-    #         pass
-
-    #     N = cell.N
-
-    #     x = np.linspace(1/N,1-1/N,N-2,endpoint=True)
-    #     y = np.linspace(1/N,1-1/N,N-2,endpoint=True)
-
-    #     xx, yy = np.meshgrid(x,y)
-    #     grid = np.array((xx.ravel(), yy.ravel())).T
-
-    #     if isinstance(cell, cls.TriangleCell):
-    #         # Remove the lower triangle from the coordinate grid.
-    #         g = np.flip(grid,axis=1)
-
-    #         indices = []
-    #         for j in range(0,N-2):
-    #             indices += list(range((j)*(N-2),j*(N-2)+(j)+1))
-    #             pass
-            
-    #         coords = np.delete(g,indices,axis=0)
-    #         pass
-    #     elif isinstance(cell, cls.SquareCell):
-    #         coords = np.flip(grid,axis=1)
-    #         pass
-    #     else:
-    #         raise Exception
-        
-    #     cell.non_elim_coords = coords
-    #     cell.num_non_elim = len(coords)
-
-    #     cell.cell_coords_constructed = True
-
-    #     return None

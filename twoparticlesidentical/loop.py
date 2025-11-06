@@ -15,10 +15,9 @@ def LoopAnyons(N, alpha):
 
     D11.indices = (1,1)
     
-
     CL = configs.ConfigurationSpace([D11])
 
-    gluing = [D11.y0, D11.x1]
+    gluing = [D11.x0, D11.y1]
 
     phase = np.exp(1j*np.pi*alpha)
 
@@ -31,22 +30,39 @@ def LoopAnyons(N, alpha):
 
     return CL
 
+def ArrangeLoopPlots(C):
+
+    C.plot_dim = (1,1)
+
+    C.figuresize = (8,6)
+
+    for cell in C.cells:
+        if cell.indices == (1,1):
+            cell.plot_loc = (0,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        else:
+            pass
+        pass
+
+    return None
+
 if __name__ == "__main__":
     # Main
 
-    N = 100
+    N = 30
     h = (np.pi)/(N-1)
-    a = 1
+    a = 0.3
 
     TG = LoopAnyons(N,a)
 
     #TG.print_eqs()
 
-    TG.lapl_solve(h,2,10)
+    TG.lapl_solve(h,2)
     spec = TG.spectrum
     spec.sort()
     print(spec)
-    TG.plot_states(0)
-    TG.plot_states(1)
-    TG.plot_states(2)
+    ArrangeLoopPlots(TG)
+    TG.plot_states(0, plotting_method="contour", realimag="phase", N_levels=40)
     pass

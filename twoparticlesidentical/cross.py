@@ -46,13 +46,11 @@ def CrossgraphBosons(N):
     CY.glue(gluing4)
 
     CY.exterior_bc("dirichlet")
-    CY.diagonal_bc("neumann")
-
-    CY.gen_lapl()
+    CY.diagonal_bc("dirichlet")
 
     return CY
 
-def CrossgraphAnyonsHardcore(N, alpha):
+def CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3):
 
     D11 = cls.TriangleCell(N)
     D22 = cls.TriangleCell(N)
@@ -83,33 +81,114 @@ def CrossgraphAnyonsHardcore(N, alpha):
     gluing3 = [D33.x0, D13.x0, D23.x0, D34.y0]
     gluing4 = [D44.x0, D14.x0, D34.x0, D24.x0]
 
-    phase = np.exp(1j*np.pi*alpha)
+    phase1 = np.exp(1j*np.pi*alpha1)
+    phase2 = np.exp(1j*np.pi*alpha2)
+    phase3 = np.exp(1j*np.pi*alpha3)
 
     CY.glue(gluing1)
-    CY.glue_with_branch_cut(gluing2, phase)
-    CY.glue_with_branch_cut(gluing3, phase)
-    CY.glue_with_branch_cut(gluing4, phase)
+    CY.glue_with_branch_cut(gluing2, phase1)
+    CY.glue_with_branch_cut(gluing3, phase2)
+    CY.glue_with_branch_cut(gluing4, phase3)
 
     CY.exterior_bc("dirichlet")
     CY.diagonal_bc("dirichlet")
 
-    CY.gen_lapl()
-
     return CY
+
+def ArrangeCrossgraphPlots(C):
+
+    C.plot_dim = (2,6)
+
+    C.figuresize = (40,10)
+
+    for cell in C.cells:
+        if cell.indices == (1,1):
+            cell.plot_loc = (1,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,2):
+            cell.plot_loc = (0,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,2):
+            cell.plot_loc = (1,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,3):
+            cell.plot_loc = (0,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,3):
+            cell.plot_loc = (0,3)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (3,3):
+            cell.plot_loc = (1,2)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,4):
+            cell.plot_loc = (0,2)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,4):
+            cell.plot_loc = (0,4)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (3,4):
+            cell.plot_loc = (0,5)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (4,4):
+            cell.plot_loc = (1,3)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        else:
+            pass
+        pass
+
+    C.plots_off = [(0,4), (0,5)]
+
+    return None
 
 if __name__ == "__main__":
     # Main
 
-    N = 100
+    N = 150
     h = (np.pi)/(N-1)
-    alpha = 1.0
+    alpha1 = 0.0
+    alpha2 = 0.0
+    alpha3 = 0.0
 
-    C = CrossgraphBosons(N)
+    #C = CrossgraphBosons(N)
 
-    #C = CrossgraphAnyonsHardcore(N,alpha)
+    C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
 
-    C.lapl_solve(h,20)
+    # Eigenvalues filepath
+    eigs_path = "cross_hardcore_eigenvalues/cross_N"+str(N)+"_alpha"+str(alpha1)
+    # Eigenstates filepath
+    states_path = "cross_hardcore_states/cross_N"+str(N)+"_alpha"+str(alpha1)+"_"
+
+    # Load the eigenvalues
+    C.load_eigenvalues(eigs_path, override_directory_path=False)
+    # Load the eigenstates
+    C.load_states(states_path, override_directory_path=False)
+
+    #C.gen_lapl()
+
+    #C.lapl_solve(h,15)
+    
     spec = C.spectrum
-    spec.sort()
+    #spec.sort()
     print(spec)
-    C.plot_states(0)
+    ArrangeCrossgraphPlots(C)
+    C.plot_states(0,plotting_method="surface",realimag="real")
