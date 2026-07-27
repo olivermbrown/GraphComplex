@@ -13,7 +13,9 @@ import cells as cls
 import configs
 import ygraph as yga
 import lasso as lsa
+import lassosubdivided as lss
 import dumbbell as db
+import dumbbellsubdivided as dbs
 
 def plot_energy_levels(Cs, alphas, show_plots=True):
     """
@@ -37,23 +39,35 @@ def plot_energy_levels(Cs, alphas, show_plots=True):
         pass
 
     minimum_eigenvalue = 0
-    maximum_eigenvalue = 2
+    maximum_eigenvalue = 20
 
     ys = np.array(ys)[:,minimum_eigenvalue:maximum_eigenvalue]
 
-    fig.set_size_inches(6, 10)
+    fig.set_size_inches(10, 8)
 
     for i in range(ys.shape[1]):
         #ax.plot(alphas, ys[:,i])
-        ax.plot(alphas, ys[:,i], label="Energy level " + str(i))
+        ax.plot(alphas, ys[:,i])
 
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel("Eigenenergy")
+    ax.set_xlabel(r"$\alpha$", fontsize=12)
+    ax.set_ylabel("Energy / "+r'$\pi^2$', fontsize=12)
+    ax.yaxis.label.set_rotation(0)
+    ax.yaxis.set_label_coords(-0.08, 0.5)
     # Locate legend outside of plot
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     if show_plots:
         plt.show()
+        pass
+
+    # Get user input for filename to save the plot
+    filename = input("Enter filename to save the plot (or press Enter to skip saving): ")
+    if filename:
+        fig.savefig(filename+ ".pdf", dpi=300)
+        print(f"Plot saved as {filename}")
+        pass
+    else:
+        print("Plot not saved.")
         pass
 
 
@@ -81,8 +95,8 @@ def plot_energy_levels_3D(Cs, alphas, show_plots=True):
         ys.append(spec)
         pass
 
-    minimum_eigenvalue = 13
-    maximum_eigenvalue = 15
+    minimum_eigenvalue = 0
+    maximum_eigenvalue = 1
 
     ys = np.array(ys)[:,minimum_eigenvalue:maximum_eigenvalue]
 
@@ -105,12 +119,12 @@ def plot_energy_levels_3D(Cs, alphas, show_plots=True):
 
         pass
 
-    ax.set_xlabel(r"$\alpha$")
-    ax.set_ylabel(r'$\alpha$')
-    ax.set_zlabel("Eigenenergy")
+    ax.set_xlabel(r"$\alpha1$", fontsize=12)
+    ax.set_ylabel(r'$\alpha2$', fontsize=12)
+    ax.set_zlabel("Ground State Energy", fontsize=12)
     # Locate legend outside of plot
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.tight_layout()
+    #plt.tight_layout()
     if show_plots:
         plt.show()
         pass
@@ -125,7 +139,6 @@ if __name__ =="__main__":
     N = 100
     h = (np.pi)/(N-1)
     alphas = np.linspace(0, 1, 25)
-    alphas = alphas[8:16]
 
     Cs = []
 
@@ -159,24 +172,37 @@ if __name__ =="__main__":
     #     pass
 
     # for alpha in alphas:
-    #     C = lsa.LassoAnyonsHardcore(N, alpha)
-    #     states_filepath = "lasso_hardcore_states/lasso_N" + str(N) + "_alpha" + str(alpha) + "_"
-    #     eigenvalues_filepath = "lasso_hardcore_eigenvalues/lasso_N" + str(N) + "_alpha" + str(alpha)
+    #     C = lss.LassoSubdividedAnyonsHardcore(N, N, alpha, 0.0)
+    #     states_filepath = "lassosubdivided_hardcore_states/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm0.0_"
+    #     eigenvalues_filepath = "lassosubdivided_hardcore_eigenvalues/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm0.0"
     #     #C.load_states(states_filepath)
     #     C.load_eigenvalues(eigenvalues_filepath)
     #     Cs.append(C)
     #     pass
 
-    # Create list of pairs of alphas
-    alphas_pairs = [(alpha1, alpha2) for alpha1 in alphas for alpha2 in alphas]
-    for (alpha1, alpha2) in alphas_pairs:
-        C = db.DumbbellAnyonsNeumann(N, alpha1, alpha2)
-        eigenvalues_filepath = "dumbbell_neumann_eigenvalues/dumbbell_N" + str(N) + "_alpha1" + str(alpha1) + "_alpha2" + str(alpha2)
+    for alpha in alphas:
+        C = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, alpha, alpha, 0.0, 0.0)
+        states_filepath = "dumbbellsubdivided_hardcore_states/dumbbellsubdivided_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha) + "_aharonovbohm1=0.0_" + "_aharonovbohm2=0.0_"
+        eigenvalues_filepath = "dumbbellsubdivided_hardcore_eigenvalues/dumbbellsubdivided_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha) + "_aharonovbohm1=0.0" + "_aharonovbohm2=0.0"
+        #C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         Cs.append(C)
         pass
 
-    #plot_energy_levels(Cs, alphas)
-    plot_energy_levels_3D(Cs, alphas)
+    # Create list of pairs of alphas
+    # alphas_pairs = [(alpha1, alpha2) for alpha1 in alphas for alpha2 in alphas]
+    # for (alpha1, alpha2) in alphas_pairs:
+    #     C = db.DumbbellAnyonsHardcore(N, alpha1, alpha2)
+    #     eigenvalues_filepath = "dumbbell_hardcore_eigenvalues/dumbbell_N" + str(N) + "_alpha1" + str(alpha1) + "_alpha2" + str(alpha2)
+    #     C.load_eigenvalues(eigenvalues_filepath, override_directory_path=True)
+    #     Cs.append(C)
+    #     pass
+
+    plot_energy_levels(Cs, alphas)
+    #plot_energy_levels_3D(Cs, alphas)
+
+    #fig = plt.gcf()
+    # Save plot
+    #fig.savefig("energy_levels_ygraph_anyons_hardcore.pdf", dpi=300)
 
     pass

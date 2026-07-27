@@ -16,8 +16,10 @@ import lasso as lsa
 import dumbbell as db
 import twowires as tw
 import lassosubdivided as lss
+import dumbbellsubdivided as dbs
 import cross as crs
 import star as star
+import hgraph as hga
 
 def save_ygraph_eigenstates_hardcore(N, alpha, n_eigs):
     """
@@ -378,6 +380,193 @@ def save_ygraph_eigenstates_robin(N, alpha, n_eigs):
 
     return None
 
+def save_hgraph_eigenstates_hardcore(N, alpha1, alpha2, n_eigs):
+    """
+    Save the eigenstates of the ConfigurationSpace object for the H graph to a file.
+
+    Args:
+        N (int): The number of points in the discretization.
+        alpha1 (float): The first parameter in the boundary conditions.
+        alpha2 (float): The second parameter in the boundary conditions.
+        n_eigs (int): The number of eigenstates to save.
+
+    Returns:
+        None.
+    """
+
+    #N, alpha, n_eigs = args_tuple
+    
+    h = (np.pi)/(N-1)
+
+    folder = "hgraph_hardcore_states/"
+    filename = "hgraph_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)
+    file_path = folder+filename+"_"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+
+    eigs_folder = "hgraph_hardcore_eigenvalues/"
+    if not os.path.exists(eigs_folder):
+        try:
+            os.makedirs(eigs_folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+    eigs_path = eigs_folder+filename
+
+    print("alpha1 = ", alpha1, " alpha2 = ", alpha2)
+
+    # Create the ConfigurationSpace object.
+    CY = hga.HgraphAnyonsHardcore(N, alpha1, alpha2)
+
+    # Generate the Laplacian matrix.
+    CY.gen_lapl()
+
+    # Solve the eigenvalue problem.
+    CY.lapl_solve(h, N_eigs=n_eigs)
+
+    # Save the values to a file
+    CY.save_eigenvalues(eigs_path)
+    print("Eigenvalues saved to ", eigs_path)
+
+    # Save the eigenstates to the file.
+    CY.save_states(file_path)
+    print("Eigenstates saved to ", file_path)
+
+    return None
+
+def save_hgraph_eigenstates_neumann(N, alpha1, alpha2, n_eigs):
+    """
+    Save the eigenstates of the ConfigurationSpace object for the H graph to a file.
+
+    Args:
+        N (int): The number of points in the discretization.
+        alpha1 (float): The first parameter in the boundary conditions.
+        alpha2 (float): The second parameter in the boundary conditions.
+        n_eigs (int): The number of eigenstates to save.
+
+    Returns:
+        None.
+    """
+
+    #N, alpha, n_eigs = args_tuple
+    
+    h = (np.pi)/(N-1)
+
+    folder = "hgraph_neumann_states/"
+    filename = "hgraph_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)
+    file_path = folder+filename+"_"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+
+    eigs_folder = "hgraph_neumann_eigenvalues/"
+    if not os.path.exists(eigs_folder):
+        try:
+            os.makedirs(eigs_folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+    eigs_path = eigs_folder+filename
+
+    print("alpha1 = ", alpha1, " alpha2 = ", alpha2)
+
+    robin_constant = 0.0
+
+    # Create the ConfigurationSpace object.
+    CY = hga.HgraphAnyonsDelta(N, alpha1, alpha2, robin_constant)
+
+    # Generate the Laplacian matrix.
+    CY.gen_lapl()
+
+    # Solve the eigenvalue problem.
+    CY.lapl_solve(h, N_eigs=n_eigs)
+
+    # Save the values to a file
+    CY.save_eigenvalues(eigs_path)
+    print("Eigenvalues saved to ", eigs_path)
+
+    # Save the eigenstates to the file.
+    CY.save_states(file_path)
+    print("Eigenstates saved to ", file_path)
+
+    return None
+
+def save_hgraph_all_alphas_varying_eigenstates_hardcore(N, alpha, n_eigs):
+
+    """
+    Save the eigenstates of the ConfigurationSpace object for the H graph to a file.
+
+    Args:
+        N (int): The number of points in the discretization.
+        alpha (float): The parameter in the boundary conditions.
+        n_eigs (int): The number of eigenstates to save.
+    Returns:
+        None.
+    """
+
+    #N, alpha, n_eigs = args_tuple
+    
+    h = (np.pi)/(N-1)
+
+    folder = "hgraph_all_alphas_varying_hardcore_states/"
+    filename = "hgraph_N"+str(N)+"_alpha="+str(alpha)
+    file_path = folder+filename+"_"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+
+    eigs_folder = "hgraph_all_alphas_varying_hardcore_eigenvalues/"
+    if not os.path.exists(eigs_folder):
+        try:
+            os.makedirs(eigs_folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+    eigs_path = eigs_folder+filename
+
+    print("alpha1 = ", alpha, " alpha2 = ", alpha)
+
+    # Create the ConfigurationSpace object.
+    CY = hga.HgraphAnyonsHardcore(N, alpha, alpha)
+
+    # Generate the Laplacian matrix.
+    CY.gen_lapl()
+
+    # Solve the eigenvalue problem.
+    CY.lapl_solve(h, N_eigs=n_eigs)
+
+    # Save the values to a file
+    CY.save_eigenvalues(eigs_path)
+    print("Eigenvalues saved to ", eigs_path)
+
+    # Save the eigenstates to the file.
+    CY.save_states(file_path)
+    print("Eigenstates saved to ", file_path)
+
+    return None
+
 def save_lasso_eigenstates_neumann(N, alpha, n_eigs):
     """
     Save the eigenstates of the ConfigurationSpace object for the lasso graph to a file.
@@ -510,7 +699,8 @@ def save_dumbbell_eigenstates_neumann(N, alpha1, alpha2, n_eigs):
 
     Args:
         N (int): The number of points in the discretization.
-        alpha (float): The parameter in the boundary conditions.
+        alpha1 (float): The first parameter in the boundary conditions.
+        alpha2 (float): The second parameter in the boundary conditions.
         n_eigs (int): The number of eigenstates to save.
 
     Returns:
@@ -659,6 +849,60 @@ def save_lassosubdivided_eigenstates_hardcore(N, alpha, aharonovbohm, n_eigs):
 
     return None
 
+def save_dumbbellsubdivided_eigenstates_hardcore(N, alpha1, alpha2, aharonovbohm1, aharonovbohm2, n_eigs):
+    """
+    Save the eigenstates of the ConfigurationSpace object for the dumbbell subdivided graph to a file.
+
+    Args:
+        N (int): The number of points in the discretization for the first wire.
+        N2 (int): The number of points in the discretization for the second wire.
+        alpha1 (float): The parameter in the boundary conditions for the first wire.
+        alpha2 (float): The parameter in the boundary conditions for the second wire.
+        aharonovbohm1 (float): The Aharonov-Bohm phase for the first wire.
+        aharonovbohm2 (float): The Aharonov-Bohm phase for the second wire.
+        n_eigs (int): The number of eigenstates to save.
+
+    Returns:
+        None.
+    """
+
+    #N, N2, alpha, aharonovbohm, n_eigs = args_tuple
+    
+    h = (np.pi)/(N-1)
+
+    folder = "dumbbellsubdivided_hardcore_states/"
+    filename = "dumbbellsubdivided_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_aharonovbohm1="+str(aharonovbohm1)+"_aharonovbohm2="+str(aharonovbohm2)
+    file_path = folder+filename+"_"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        pass
+
+    eigs_folder = "dumbbellsubdivided_hardcore_eigenvalues/"
+    if not os.path.exists(eigs_folder):
+        os.makedirs(eigs_folder)
+        pass
+    eigs_path = eigs_folder+filename
+
+    # Create the ConfigurationSpace object.
+    C = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, alpha1, alpha2, aharonovbohm1, aharonovbohm2)
+
+    # Generate the Laplacian matrix.
+    C.gen_lapl()
+
+    # Solve the eigenvalue problem.
+    C.lapl_solve(h, N_eigs=n_eigs)
+
+    # Save the values to a file
+    C.save_eigenvalues(eigs_path)
+
+    # Save the eigenstates to the file.
+    C.save_states(file_path)
+    print("Eigenstates saved to ", file_path)
+
+    return None
+
 def save_cross_eigenstates_hardcore(N, alpha, n_eigs):
     """
     Save the eigenstates of the ConfigurationSpace object for the cross graph to a file.
@@ -705,7 +949,66 @@ def save_cross_eigenstates_hardcore(N, alpha, n_eigs):
     alpha3 = 0.0
 
     # Create the ConfigurationSpace object.
-    CY = crs.CrossgraphAnyonsHardcore(N, alpha, alpha2, alpha3)
+    CY = crs.CrossgraphAnyonsHardcore(N, alpha, alpha, alpha)
+
+    # Generate the Laplacian matrix.
+    CY.gen_lapl()
+
+    # Solve the eigenvalue problem.
+    CY.lapl_solve(h, N_eigs=n_eigs)
+
+    # Save the values to a file
+    CY.save_eigenvalues(eigs_path)
+    print("Eigenvalues saved to ", eigs_path)
+
+    # Save the eigenstates to the file.
+    CY.save_states(file_path)
+    print("Eigenstates saved to ", file_path)
+
+    return None
+
+def save_cross_all_alphas_varying_eigenstates_hardcore(N, alpha, n_eigs):
+    """
+    Save the eigenstates of the ConfigurationSpace object for the cross graph with all alpha values varying to a file.
+
+    Args:
+        N (int): The number of points in the discretization.
+        alpha (float): The parameter in the boundary conditions.
+        n_eigs (int): The number of eigenstates to save.
+
+    Returns:
+        None.
+    """
+    
+    h = (np.pi)/(N-1)
+
+    folder = "cross_all_alphas_varying_hardcore_states/"
+    filename = "cross_N"+str(N)+"_alpha"+str(alpha)
+    file_path = folder+filename+"_"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(folder):
+        try:
+            os.makedirs(folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+
+    eigs_folder = "cross_all_alphas_varying_hardcore_eigenvalues/"
+    if not os.path.exists(eigs_folder):
+        try:
+            os.makedirs(eigs_folder)
+            pass
+        except FileExistsError:
+            pass
+        pass
+    eigs_path = eigs_folder+filename
+
+    print("alpha = ", alpha)
+
+    # Create the ConfigurationSpace object.
+    CY = crs.CrossgraphAnyonsHardcore(N, alpha, alpha, alpha)
 
     # Generate the Laplacian matrix.
     CY.gen_lapl()
@@ -789,9 +1092,15 @@ def save_star_eigenstates_hardcore(N, alpha, n_eigs):
 
 if __name__ == "__main__":
     # Main
-    alphas = [0.0]#np.linspace(0, 1, 25)
-    N = 150
-    args = [(int(N), float(alpha), 50) for alpha in alphas]
+    alphas = np.linspace(0, 1, 25)
+    N = 100
+    #alpha = 1.0
+    #Ns = np.linspace(10, 150, 15, dtype=int)
+    args = [(int(N), alpha, 30) for alpha in alphas]
+    #args_lassosubdivided = [(int(N), alpha, 0.0, 30) for N in Ns]
+    #args_dumbbellsubdivided = [(int(N), alpha, alpha, 0.0, 0.0, 30) for N in Ns]
+    #args_cross = [(int(N), alpha, 30) for N in Ns]
+    #args_hgraph = [(int(N), alpha, alpha, 30) for alpha in alphas]
 
     # i defined as system argument
     i = int(sys.argv[1])
@@ -804,6 +1113,12 @@ if __name__ == "__main__":
     #     # Parallel execution using starmap which directly supports multiple arguments
     #     pool.starmap(save_lasso_eigenstates, args)
 
-    save_star_eigenstates_hardcore(*arg)
+    #save_star_eigenstates_hardcore(*arg)
+    #save_lassosubdivided_eigenstates_hardcore(*arg)
+    #save_cross_all_alphas_varying_eigenstates_hardcore(*arg)
+    #save_hgraph_eigenstates_hardcore(*arg)
+    save_hgraph_all_alphas_varying_eigenstates_hardcore(*arg)
+    #save_dumbbellsubdivided_eigenstates_hardcore(*arg)
+    #save_cross_eigenstates_hardcore(*arg)
 
     pass

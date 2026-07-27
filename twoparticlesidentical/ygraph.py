@@ -113,7 +113,7 @@ def ArrangeYgraphPlots(C):
 
     C.plot_dim = (2,3)
 
-    C.figuresize = (19,9)
+    C.figuresize = (14,8)
 
     for cell in C.cells:
         if cell.indices == (1,1):
@@ -150,16 +150,26 @@ def ArrangeYgraphPlots(C):
             pass
         pass
 
+    C.panel_wspace = -0.1
+    C.panel_hspace = 0.6
+    C.title_size = 26
+    C.title_pad = 10.0
+    C.label_size = 20
+    C.tick_size = 14
+    C.legend_size = 22
+
+    C.y_label_coords = (-0.28, 0.45)
+
     return None
 
 if __name__ == "__main__":
     # Main
 
-    N = 100
-    N2 = 40
-    N3 = 80
+    N = 50
+    N2 = 100
+    N3 = 100
     h = (np.pi)/(N-1)
-    alpha = 0.5
+    alpha = 0.0
 
     CY = YgraphAnyonsHardcore(N,alpha)
 
@@ -184,9 +194,9 @@ if __name__ == "__main__":
     #CY = YgraphAnyonsRobin(N,alpha)
     #CY.robin_constant = 2
 
-    #CY.gen_lapl()
+    CY.gen_lapl()
 
-    #CY.lapl_solve(h, N_eigs=20)
+    CY.lapl_solve(h, N_eigs=1)
 
     # Save the eigenvalues
     #CY.save_eigenvalues(eigs_path)
@@ -194,17 +204,37 @@ if __name__ == "__main__":
     #CY.save_states(states_path)
 
     # Load the eigenvalues
-    CY.load_eigenvalues(eigs_path, override_directory_path=False)
+    #CY.load_eigenvalues(eigs_path, override_directory_path=False)
     # Load the eigenstates
-    CY.load_states(states_path, override_directory_path=False)
+    #CY.load_states(states_path, override_directory_path=False)
     spec = CY.spectrum
     print(spec)
-    print(spec[6])
     spec.sort()
     print(spec)
     ArrangeYgraphPlots(CY)
-    CY.plot_states(0, plotting_method="contour", realimag="phase", N_levels=20)
+    ri = "abs"
+    save_name = "ygraph_N"+str(N)+"_alpha"+str(alpha)+"_"+ri+"_contour.pdf"
+    CY.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
     #CY.plot_states(1)
     #CY.plot_states(2)
     #CY.plot_states(3)
     #CY.plot_states(4)
+
+    for p in [0.25, 0.5, 0.75, 1.0]:
+
+        alpha = p
+
+        CY = YgraphAnyonsHardcore(N,alpha)
+
+        CY.gen_lapl()
+
+        CY.lapl_solve(h, N_eigs=1)
+
+        ArrangeYgraphPlots(CY)
+        ri = "abs"
+        save_name = "ygraph_N"+str(N)+"_alpha"+str(alpha)+"_"+ri+"_contour.pdf"
+        CY.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+
+        ri = "phase"
+        save_name = "ygraph_N"+str(N)+"_alpha"+str(alpha)+"_"+ri+"_contour.pdf"
+        CY.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)

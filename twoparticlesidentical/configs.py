@@ -2,6 +2,7 @@
 Code to solve the Laplacian on a CW 2-Complex formed from 2 particles on a graph
 """
 
+import os
 import numpy as np
 import scipy as sp
 import sympy as sym
@@ -44,9 +45,20 @@ class ConfigurationSpace:
         self.free_edges, self.diagonal = self.get_edges()
         #self.find_edge_indices()
 
+        # Plot panel settings for the configuration space.
         self.plot_dim = (1,1)
         self.plots_off = []
         self.figuresize = (8,6)
+        self.panel_wspace = -0.23
+        self.panel_hspace = 1.0
+
+        # Plot label settings for the configuration space.
+        self.title_size = 16
+        self.label_size = 14
+        self.tick_size = 12
+        self.legend_size = 12
+        self.title_pad = 10.0
+        self.y_label_coords = None
 
         self.diagonal_boundary_condition = None
         self.exterior_boundary_condition = None
@@ -1164,7 +1176,7 @@ class ConfigurationSpace:
 
         return None
     
-    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False, plotting_method="surface", realimag="abs", N_levels=20):
+    def plot_states(self, n, return_data=False, show_plots=True, solve_lapl=False, plotting_method="surface", realimag="abs", N_levels=20, save_as=None):
         # Plot the states of the system
 
         if solve_lapl == False:
@@ -1188,6 +1200,8 @@ class ConfigurationSpace:
                     #max = np.max(np.angle(cell.eigenstates[:,n]))
                     min = -np.pi
                     max = np.pi
+                    #min = 0
+                    #max = 2*np.pi
                     pass
                 elif realimag == "abs":
                     min = np.min(abs(cell.eigenstates[:,n]))
@@ -1222,10 +1236,11 @@ class ConfigurationSpace:
             pass
         elif plotting_method == "contour":
             dim1, dim2 = self.plot_dim
-            fig, ax = plt.subplots(dim1, dim2, figsize=self.figuresize)
+            fig, ax = plt.subplots(dim1, dim2, figsize=self.figuresize, constrained_layout=False)
+            #fig.subplots_adjust(wspace=-0.45, hspace=0.2)
             # Choose colormap
             if realimag == "phase":
-                plot_cmp = "gray"
+                plot_cmp = "twilight"
                 pass
             else:
                 plot_cmp = "cividis"
@@ -1282,6 +1297,8 @@ class ConfigurationSpace:
                 ax.ticklabel_format(axis='z',style='plain',useOffset=True)
                 ax.zaxis.labelpad=10
                 plt.title("D"+str(indices))
+                if save_as is not None:
+                    plt.savefig(save_as, bbox_inches="tight")
                 pass
             elif plotting_method == "contour":
                 triang = tri.Triangulation(coords[:, 0], coords[:, 1])
@@ -1301,10 +1318,11 @@ class ConfigurationSpace:
                 strid = str(id1)+","+str(id2)
                 title = r'$\psi_{{{}}}$'.format(strid)
                 if self.plot_dim == (1,1):
-                    ax.set_title(title, fontsize=12)
+                    ax.set_title(title, fontsize=self.title_size)
                     pass
                 else:
-                    ax[sb1,sb2].set_title(title, fontsize=20)
+                    ax[sb1,sb2].set_title(title, fontsize=self.title_size, pad=self.title_pad)
+                    ax[sb1,sb2].set_aspect('equal', adjustable='box')
                     pass
                 if type(cell) == cls.TriangleCell:
                     xs = np.linspace(coords[0,0],coords[-1,0],100)
@@ -1337,9 +1355,9 @@ class ConfigurationSpace:
                 pass
             elif plotting_method == "contour":
                 if cell.use_x_labels == True:
-                    ax[sb1,sb2].set_xlabel(xl,fontsize=16)
+                    ax[sb1,sb2].set_xlabel(xl,fontsize=self.label_size)
                     # Make x ticks larger
-                    ax[sb1,sb2].tick_params(axis='x', labelsize=12)
+                    ax[sb1,sb2].tick_params(axis='x', labelsize=self.tick_size)
                     pass
                 elif cell.use_x_labels == False:
                     ax[sb1,sb2].get_xaxis().set_visible(False)
@@ -1347,12 +1365,17 @@ class ConfigurationSpace:
                 else:
                     pass
                 if cell.use_y_labels == True:
-                    ax[sb1,sb2].set_ylabel(yl,fontsize=16)
+                    ax[sb1,sb2].set_ylabel(yl,fontsize=self.label_size, labelpad=12)
+                    if self.y_label_coords is not None:
+                        ax[sb1,sb2].yaxis.set_label_coords(self.y_label_coords[0], self.y_label_coords[1])
+                        pass
+                    else:
+                        pass
                     # Make y ticks larger
-                    ax[sb1,sb2].tick_params(axis='y', labelsize=12)
+                    ax[sb1,sb2].tick_params(axis='y', labelsize=self.tick_size)
                     # Rotate y-axis label
                     ax[sb1,sb2].yaxis.label.set_rotation(0)
-                    ax[sb1, sb2].yaxis.set_label_coords(-0.5, 0.5)
+                    #ax[sb1, sb2].yaxis.set_label_coords(-0.5, 0.5)
                     pass
                 elif cell.use_y_labels == False:
                     ax[sb1,sb2].get_yaxis().set_visible(False)
@@ -1397,10 +1420,39 @@ class ConfigurationSpace:
                         po1, po2 = po
                         ax[po1,po2].axis('off')
                         pass
-                    #fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=0.3, hspace=0.4)
-                    cbar = fig.colorbar(contour_plot, ax=ax)
-                    cbar.ax.tick_params(labelsize=12)
-                    #plt.savefig("foo.pdf", bbox_inches="tight")
+                    #fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, wspace=-0.23, hspace=0.2)
+                    fig.subplots_adjust(left=0.05, right=0.9, top=0.9, bottom=0.1, wspace=self.panel_wspace, hspace=self.panel_hspace)
+
+                    # In configs.py (inside plot_states):
+
+                    # 1. Find the bounding limits (y_min, y_max, x_max) across all active plots
+                    y_min = 1.0
+                    y_max = 0.0
+                    x_max = 0.0
+
+                    for cell in cells:
+                        r, c = cell.plot_loc
+                        pos = ax[r, c].get_position()
+                        
+                        if pos.y0 < y_min:
+                            y_min = pos.y0
+                        if pos.y1 > y_max:
+                            y_max = pos.y1
+                        if pos.x1 > x_max:
+                            x_max = pos.x1
+
+                    height = y_max - y_min
+
+                    # 2. Create the colorbar axis aligned dynamically to the right of all active plots
+                    cax = fig.add_axes([x_max + 0.03, y_min, 0.025, height])
+
+                    # 3. Draw the colorbar
+                    cbar = fig.colorbar(contour_plot, cax=cax)
+                    cbar.ax.tick_params(labelsize=self.tick_size)
+                    if save_as is not None:
+                        #plt.savefig(save_as, bbox_inches="tight")
+                        plt.savefig(save_as)
+                        pass
                     plt.show()
                     pass
                 pass
@@ -1443,15 +1495,20 @@ class ConfigurationSpace:
             data = np.hstack((coords, states))
 
             indices = cell.indices
+            path = filename + "D" + str(indices) + ".csv"
 
-            #np.savetxt(filename+"D"+str(indices)+".csv",data,delimiter=",")
-            np.savetxt(filename+"D"+str(indices)+".csv",data.view(float),delimiter=",")
+            directory = os.path.dirname(path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+
+            #np.savetxt(path,data,delimiter=",")
+            np.savetxt(path, data.view(float), delimiter=",")
             c+=length
             pass
 
         return None
     
-    def load_states(self, filename,override_directory_path=False):
+    def load_states(self, filename,override_directory_path=False, warn_on_missing=True):
         # Load the states of the system from a file
 
         if override_directory_path == True:
@@ -1513,8 +1570,13 @@ class ConfigurationSpace:
             coords = cell.non_elim_coords
             length = cell.num_non_elim
 
-            #data = np.loadtxt(filename+"D"+str(cell.indices)+".csv",delimiter=",")
-            data = np.loadtxt(filename+"D"+str(cell.indices)+".csv",delimiter=",").view(complex)
+            path = filename + "D" + str(cell.indices) + ".csv"
+            if not os.path.exists(path):
+                if warn_on_missing:
+                    print(f"Warning: state file not found: {path}")
+                continue
+
+            data = np.loadtxt(path, delimiter=",").view(complex)
             states = data[:,2:]
 
             cell.eigenstates = states
@@ -1532,8 +1594,13 @@ class ConfigurationSpace:
         #filename = directory_path + filename
 
         spec = self.spectrum
+        path = filename + ".csv"
 
-        np.savetxt(filename+".csv",spec,delimiter=",")
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        np.savetxt(path, spec, delimiter=",")
 
         return None
     
@@ -1549,7 +1616,11 @@ class ConfigurationSpace:
         
         filename = directory_path + filename
 
-        spec = np.loadtxt(filename+".csv",delimiter=",")
+        path = filename + ".csv"
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Eigenvalue file not found: {path}")
+
+        spec = np.loadtxt(path, delimiter=",")
 
         self.spectrum = spec
 

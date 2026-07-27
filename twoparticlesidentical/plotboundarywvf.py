@@ -17,6 +17,7 @@ import dumbbell as db
 import squarecell as sc
 import twowires as tw
 import lassosubdivided as lss
+import cross as cga
 
 def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, state_number=None, extrapolate_to_origin=False):
     """
@@ -221,8 +222,8 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
 
     # Calculate the slope of the line from first several points
     degree = 1
-    start = 3
-    cutoff = 35
+    start = 5
+    cutoff = 33
     polyfeatures = PolynomialFeatures(degree).fit_transform(ys[start:cutoff].reshape(-1,1))
     logfeatures = np.log(np.abs(ys[start:cutoff]).reshape(-1,1))
     features = np.concatenate((logfeatures,polyfeatures),axis=1)
@@ -242,34 +243,75 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     derivative = np.polyder(m)
     print(m)
 
-    # 1. Compute predictions and residuals
-    y_true = np.log(np.abs(psi[start:cutoff]))
-    y_pred = reg.predict(features)
-    residuals = y_true - y_pred
+    # Error estimate code: shift the window
+    shift = 2
+    start_lower = start - shift
+    start_upper = start + shift
+    cutoff_lower = cutoff - shift
+    cutoff_upper = cutoff + shift
+    polyfeatures_low = PolynomialFeatures(degree).fit_transform(ys[start_lower:cutoff_lower].reshape(-1,1))
+    polyfeatures_high = PolynomialFeatures(degree).fit_transform(ys[start_upper:cutoff_upper].reshape(-1,1))
+    logfeatures_low = np.log(np.abs(ys[start_lower:cutoff_lower]).reshape(-1,1))
+    logfeatures_high = np.log(np.abs(ys[start_upper:cutoff_upper]).reshape(-1,1))
+    features_low = np.concatenate((logfeatures_low,polyfeatures_low),axis=1)
+    features_high = np.concatenate((logfeatures_high,polyfeatures_high),axis=1)
+    print(features_low.shape)
+    print(features_high.shape)
+    reg_low = LinearRegression(fit_intercept=False).fit(features_low, np.log(np.abs(psi[start_lower:cutoff_lower])))
+    reg_high = LinearRegression(fit_intercept=False).fit(features_high, np.log(np.abs(psi[start_upper:cutoff_upper])))
+    m_low = reg_low.coef_
+    m_high = reg_high.coef_
+    r_lower = np.linspace(ys[start_lower], ys[cutoff_lower], 100)
+    r_high = np.linspace(ys[start_upper], ys[cutoff_upper], 100)
+    plottingfeatures_low = PolynomialFeatures(degree).fit_transform(r_lower.reshape(-1,1))
+    plottingfeatures_high = PolynomialFeatures(degree).fit_transform(r_high.reshape(-1,1))
+    plottinglogfeatures_low = np.log(np.abs(r_lower).reshape(-1,1))
+    plottinglogfeatures_high = np.log(np.abs(r_high).reshape(-1,1))
+    plotting_low = np.concatenate((plottinglogfeatures_low,plottingfeatures_low),axis=1)
+    plotting_high = np.concatenate((plottinglogfeatures_high,plottingfeatures_high),axis=1)
+    #polynomial = np.dot(plotting, m)
+    polynomial_low = reg_low.predict(plotting_low)
+    polynomial_high = reg_high.predict(plotting_high)
 
-    # 2. Degrees of freedom
-    n_samples, n_features = features.shape
-    dof = n_samples - n_features
+    # Calculate the gradient of the polynomial through xs[0]
+    derivative_lower = np.polyder(m_low)
+    derivative_high = np.polyder(m_high)
+    print(m_low)
+    print(m_high)
 
-    # 3. Estimate residual variance
-    residual_variance = np.sum(residuals**2) / dof
+    se_m0 = np.max([np.abs(m[0]-m_low[0]), np.abs(m[0]-m_high[0])])
 
-    # 4. Covariance matrix of coefficients: (XᵀX)^(-1) * σ²
-    XTX_inv = np.linalg.inv(features.T @ features)
-    cov_matrix = residual_variance * XTX_inv
 
-    # 5. Standard error of the first coefficient (m[0])
-    se_m0 = np.sqrt(cov_matrix[0, 0])
-    print("Standard error of the first coefficient (m[0]):", se_m0)
+    # Old error code
 
-    # Plot show the log log plot with the linear fit through the first three points in red
-    if show_plots:
-        plt.plot(np.log(r), polynomial, color='red')
-        plt.show()
-        pass
-    else:
-        plt.close('all')
-        pass
+    # # 1. Compute predictions and residuals
+    # y_true = np.log(np.abs(psi[start:cutoff]))
+    # y_pred = reg.predict(features)
+    # residuals = y_true - y_pred
+
+    # # 2. Degrees of freedom
+    # n_samples, n_features = features.shape
+    # dof = n_samples - n_features
+
+    # # 3. Estimate residual variance
+    # residual_variance = np.sum(residuals**2) / dof
+
+    # # 4. Covariance matrix of coefficients: (XᵀX)^(-1) * σ²
+    # XTX_inv = np.linalg.inv(features.T @ features)
+    # cov_matrix = residual_variance * XTX_inv
+
+    # # 5. Standard error of the first coefficient (m[0])
+    # se_m0 = np.sqrt(cov_matrix[0, 0])
+    # print("Standard error of the first coefficient (m[0]):", se_m0)
+
+    # # Plot show the log log plot with the linear fit through the first three points in red
+    # if show_plots:
+    #     plt.plot(np.log(r), polynomial, color='red')
+    #     plt.show()
+    #     pass
+    # else:
+    #     plt.close('all')
+    #     pass
 
     return m[0], se_m0
 
@@ -698,8 +740,9 @@ def lasso_hardcore_interpolation(N):
         #gluing = C.gluings_with_branch_cut[0][0]
         gluing = C.gluings[0]
         print("alpha = ", alpha)
-        m = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
+        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
         ms.append(m)
+
         pass
 
     # Produce scatter plot of m against alpha
@@ -795,6 +838,7 @@ def lassosubdivided_hardcore_interpolation(N):
 
     CYs = []
     ms = []
+    ses = []
     for alpha in alphas:
         C = lss.LassoSubdividedAnyonsHardcore(N, N, alpha, ab)
         states_filepath = "lassosubdivided_hardcore_states/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm" + str(ab) + "_"
@@ -802,26 +846,202 @@ def lassosubdivided_hardcore_interpolation(N):
         C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
-        #gluing = C.gluings_with_branch_cut[0][0]
+        #gluing = C.gluings_with_branch_cut[2][0]
         gluing = C.gluings[0]
         print("alpha = ", alpha)
-        m, _ = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
+        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
         ms.append(m)
+        ses.append(se)
         pass
 
     # Produce scatter plot of m against alpha
     plt.clf()
     #plt.plot(alphas, ms)
-    #betas_analytic = ygraph_hardcore_analytic()
-    #plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Data with error bars')
-    plt.plot(alphas, ms, label='Analytic solution')
-    plt.scatter(alphas, ms)
+    betas_analytic = ygraph_hardcore_analytic()
+    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Data with error bars')
+    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.scatter(alphas, ms)
     # X axis label
     plt.xlabel(r"$\alpha$")
     # Y axis label
     plt.ylabel(r"$\beta$", rotation=0)
     # Rotate y axis label
     plt.yticks(rotation=0)
+    plt.show()
+
+    # # Produce scatter plot of m against alpha
+    # plt.clf()
+    # #plt.plot(alphas, ms)
+    # #betas_analytic = ygraph_hardcore_analytic()
+    # #plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Data with error bars')
+    # plt.plot(alphas, ms, label='Analytic solution')
+    # plt.scatter(alphas, ms)
+    # # X axis label
+    # plt.xlabel(r"$\alpha$")
+    # # Y axis label
+    # plt.ylabel(r"$\beta$", rotation=0)
+    # # Rotate y axis label
+    # plt.yticks(rotation=0)
+    # plt.show()
+
+    return None
+
+def cross_hardcore_analytic_single_alpha_varying():
+
+    betas = [0.666667,0.66706,0.668238,0.670192,0.672911,0.676375,0.680564,0.685448,0.690994,0.697163,0.703909,0.711181,0.718916,0.727044,0.735481,0.744126,0.752856,0.761525,0.769947,0.777896,0.785099,0.791238,0.79597,0.79897,0.8]
+
+    return betas
+
+def cross_hardcore_analytic_all_alphas_varying():
+
+    betas = [
+    0.666667,
+    0.66902,
+    0.67598,
+    0.687258,
+    0.702399,
+    0.72082,
+    0.741847,
+    0.764755,
+    0.000579487,
+    0.000407745,
+    0.933957,
+    0.906285,
+    0.88283,
+    0.903109,
+    0.921423,
+    0.937649,
+    0.000276197,
+    0.84195,
+    0.850316,
+    0.864044,
+    0.88283,
+    0.906285,
+    0.933957,
+    0.965363,
+    0.999999,
+    ]
+
+    return betas
+
+def crossgraph_single_alpha_varying_hardcore_interpolation(N):
+
+    alphas = np.linspace(0, 1, 25)
+    h = (np.pi)/(N-1)
+    alpha2 = 0.0
+    alpha3 = 0.0
+
+    CYs = []
+    gluing1s = []
+    ms = []
+    ses = []
+    for alpha in alphas:
+        C = cga.CrossgraphAnyonsHardcore(N, alpha, alpha2, alpha3)
+        states_filepath = "cross_hardcore_states/cross_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "cross_hardcore_eigenvalues/cross_N" + str(N) + "_alpha" + str(alpha)
+        C.load_states(states_filepath)
+        C.load_eigenvalues(eigenvalues_filepath)
+        CYs.append(C)
+        #gluing = C.gluings[1]
+        gluing = C.gluings_with_branch_cut[0][0]
+        print("alpha = ", alpha)
+        cga.ArrangeCrossgraphPlots(C)
+        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False)
+        ms.append(m)
+        ses.append(se)
+        pass
+
+    # Produce scatter plot of m against alpha
+    plt.clf()
+    #plt.plot(alphas, ms)
+    betas_analytic = cross_hardcore_analytic_single_alpha_varying()
+    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
+    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
+    plt.legend(fontsize=14, loc='lower right')
+    plt.show()
+
+    return None
+
+def cross_hardcore_analytic_all_alphas_varying():
+
+    betas = [
+    0.666667,
+    0.66902,
+    0.67598,
+    0.687258,
+    0.702399,
+    0.72082,
+    0.741847,
+    0.764755,
+    0.000579487,
+    0.000407745,
+    0.933957,
+    0.906285,
+    0.88283,
+    0.903109,
+    0.921423,
+    0.937649,
+    0.000276197,
+    0.84195,
+    0.850316,
+    0.864044,
+    0.88283,
+    0.906285,
+    0.933957,
+    0.965363,
+    0.999999,
+    ]
+
+    return betas
+
+def crossgraph_all_alphas_varying_hardcore_interpolation(N):
+
+    alphas = np.linspace(0, 1, 25)
+    h = (np.pi)/(N-1)
+    alpha2 = 0.0
+    alpha3 = 0.0
+
+    CYs = []
+    gluing1s = []
+    ms = []
+    ses = []
+    for alpha in alphas:
+        C = cga.CrossgraphAnyonsHardcore(N, alpha, alpha2, alpha3)
+        states_filepath = "cross_all_alphas_varying_hardcore_states/cross_N" + str(N) + "_alpha" + str(alpha) + "_"
+        eigenvalues_filepath = "cross_all_alphas_varying_hardcore_eigenvalues/cross_N" + str(N) + "_alpha" + str(alpha)
+        C.load_states(states_filepath)
+        C.load_eigenvalues(eigenvalues_filepath)
+        CYs.append(C)
+        gluing = C.gluings[0]
+        #gluing = C.gluings_with_branch_cut[0][0]
+        print("alpha = ", alpha)
+        cga.ArrangeCrossgraphPlots(C)
+        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False)
+        ms.append(m)
+        ses.append(se)
+        pass
+
+    # Produce scatter plot of m against alpha
+    plt.clf()
+    #plt.plot(alphas, ms)
+    betas_analytic = cross_hardcore_analytic_all_alphas_varying()
+    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
+    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.scatter(alphas, ms)
+    # X axis label
+    plt.xlabel(r"$\alpha$")
+    # Y axis label
+    plt.ylabel(r"$\beta$", rotation=0)
+    # Rotate y axis label
+    plt.yticks(rotation=0)
+    plt.legend(fontsize=14, loc='lower right')
     plt.show()
 
     return None
@@ -1058,9 +1278,10 @@ if __name__ =="__main__":
     #lasso_robin_interpolation(N)
     #dumbbell_interpolation(N)
     #dumbbell_hardcore_interpolation(N)
-    ygraph_hardcore_interpolation_hypotenuse(N)
+    #ygraph_hardcore_interpolation_hypotenuse(N)
     #singlesquarecell_hardcore_interpolation(N)
     #lassosubdivided_hardcore_interpolation(N)
+    crossgraph_all_alphas_varying_hardcore_interpolation(N)
     #twowires_hardcore_interpolation(N)
     #model_function_interpolation(N)
 

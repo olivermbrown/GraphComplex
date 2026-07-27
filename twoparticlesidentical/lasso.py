@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     N = 80
     h = (np.pi)/(N-1)
-    alpha = 0
+    alpha = 0.5
 
     #C = LassoAnyonsContact(N,alpha)
 
@@ -137,6 +137,6 @@ if __name__ == "__main__":
     #spec.sort()
     print(spec)
     ArrangeLassoPlots(C)
-    C.plot_states(0, plotting_method="contour", realimag="abs", N_levels=40)
+    C.plot_states(0, plotting_method="contour", realimag="imag", N_levels=40)
 
     pass

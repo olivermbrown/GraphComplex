@@ -94,7 +94,7 @@ def ArrangeLassoSubdividedPlots(C):
 
     C.plot_dim = (3,3)
 
-    C.figuresize = (8,6)
+    C.figuresize = (11,10)
 
     for cell in C.cells:
         if cell.indices == (1,1):
@@ -133,22 +133,32 @@ def ArrangeLassoSubdividedPlots(C):
 
     C.plots_off = [(2,1),(2,2),(1,2)]
 
+    C.panel_wspace = -0.2
+    C.panel_hspace = 0.24
+    C.title_size = 28
+    C.title_pad = 10.0
+    C.label_size = 22
+    C.tick_size = 16
+    C.legend_size = 22
+
+    C.y_label_coords = (-0.28, 0.45)
+
     return None
 
 if __name__ == "__main__":
     # Main
 
-    N = 100
-    N2 = 50
+    N = 150
+    N2 = 100
     h = (np.pi)/(N-1)
-    alpha = 0.0
+    alpha = 0.75
     aharonovbohm = 0.0
     
-    C = LassoSubdividedAnyonsHardcore(N, N2, alpha, aharonovbohm)
+    C = LassoSubdividedAnyonsHardcore(N, N, alpha, aharonovbohm)
 
-    C.gen_lapl()
+    #C.gen_lapl()
 
-    C.lapl_solve(h,5)
+    #C.lapl_solve(h,1)
 
     # Load the states
     # Eigenvalues filepath
@@ -157,15 +167,66 @@ if __name__ == "__main__":
     eigs_path = "lassosubdivided_hardcore_eigenvalues/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm" + str(aharonovbohm)
 
     # Load the eigenvalues
-    #C.load_eigenvalues(eigs_path)
+    C.load_eigenvalues(eigs_path)
     # Load the eigenstates
-    #C.load_states(states_path)
+    C.load_states(states_path)
 
     spec = C.spectrum
     spec.sort()
     print(spec)
     ArrangeLassoSubdividedPlots(C)
-    C.plot_states(0, plotting_method="contour", realimag="abs", N_levels=20)
-    C.plot_states(0, plotting_method="contour", realimag="phase", N_levels=40)
+    #C.plot_states(0, plotting_method="contour", realimag="abs", N_levels=20)
+    ri = "abs"
+    save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+    ri = "phase"
+    save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
     #C.plot_states(1)
     #C.plot_states(2)
+
+    # for p in [0.25, 0.5, 0.75, 1.0]:
+
+    #     alpha = p
+    #     aharonovbohm = 0.0
+
+    #     C = LassoSubdividedAnyonsHardcore(N, N, alpha, aharonovbohm)
+
+    #     C.gen_lapl()
+
+    #     C.lapl_solve(h,1)
+
+    #     ArrangeLassoSubdividedPlots(C)
+
+    #     ri = "abs"
+    #     save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    #     C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+
+    #     ri = "phase"
+    #     save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    #     C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+
+    #     pass
+
+    # for p in [0.25, 0.5, 0.75, 1.0]:
+
+    #     alpha = 0.0
+    #     aharonovbohm = p
+
+    #     C = LassoSubdividedAnyonsHardcore(N, N, alpha, aharonovbohm)
+
+    #     C.gen_lapl()
+
+    #     C.lapl_solve(h,1)
+
+    #     ArrangeLassoSubdividedPlots(C)
+
+    #     ri = "abs"
+    #     save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    #     C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+
+    #     ri = "phase"
+    #     save_name = "lassosubdivided_N"+str(N)+"_alpha"+str(alpha)+"_aharonovbohm"+str(aharonovbohm)+"_"+ri+"_contour.pdf"
+    #     C.plot_states(0, plotting_method="contour", realimag=ri, N_levels=20, save_as=save_name)
+
+    #     pass

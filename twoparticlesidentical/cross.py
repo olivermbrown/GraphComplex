@@ -95,11 +95,11 @@ def CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3):
 
     return CY
 
-def ArrangeCrossgraphPlots(C):
+def ArrangeCrossgraphPlotsOld(C):
 
     C.plot_dim = (2,6)
 
-    C.figuresize = (40,10)
+    C.figuresize = (32,14)
 
     for cell in C.cells:
         if cell.indices == (1,1):
@@ -156,14 +156,93 @@ def ArrangeCrossgraphPlots(C):
             pass
         pass
 
-    C.plots_off = [(0,4), (0,5)]
+    C.plots_off = [(1,4), (1,5)]
+
+    C.panel_wspace = 0.3
+    C.panel_hspace = -0.2
+    C.title_size = 36
+    C.label_size = 20
+    C.tick_size = 16
+    C.legend_size = 20
+
+    return None
+
+def ArrangeCrossgraphPlots(C):
+
+    C.plot_dim = (5,2)
+
+    C.figuresize = (13,30)
+
+    for cell in C.cells:
+        if cell.indices == (1,1):
+            cell.plot_loc = (3,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,2):
+            cell.plot_loc = (0,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,2):
+            cell.plot_loc = (3,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,3):
+            cell.plot_loc = (0,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,3):
+            cell.plot_loc = (1,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (3,3):
+            cell.plot_loc = (4,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (1,4):
+            cell.plot_loc = (1,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (2,4):
+            cell.plot_loc = (2,0)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (3,4):
+            cell.plot_loc = (2,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        elif cell.indices == (4,4):
+            cell.plot_loc = (4,1)
+            cell.use_x_labels = True
+            cell.use_y_labels = True
+            pass
+        else:
+            pass
+        pass
+
+
+    C.panel_wspace = -0.15
+    C.panel_hspace = 0.4
+    C.title_size = 40
+    C.title_pad = 14.0
+    C.label_size = 28
+    C.tick_size = 24
+    C.legend_size = 28
 
     return None
 
 if __name__ == "__main__":
     # Main
 
-    N = 150
+    N = 20
     h = (np.pi)/(N-1)
     alpha1 = 0.0
     alpha2 = 0.0
@@ -179,16 +258,90 @@ if __name__ == "__main__":
     states_path = "cross_hardcore_states/cross_N"+str(N)+"_alpha"+str(alpha1)+"_"
 
     # Load the eigenvalues
-    C.load_eigenvalues(eigs_path, override_directory_path=False)
+    #C.load_eigenvalues(eigs_path, override_directory_path=False)
     # Load the eigenstates
-    C.load_states(states_path, override_directory_path=False)
+    #C.load_states(states_path, override_directory_path=False)
 
-    #C.gen_lapl()
+    C.gen_lapl()
 
-    #C.lapl_solve(h,15)
+    C.lapl_solve(h,1)
     
     spec = C.spectrum
     #spec.sort()
     print(spec)
     ArrangeCrossgraphPlots(C)
-    C.plot_states(0,plotting_method="surface",realimag="real")
+    ri = "abs"
+    save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+    C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
+    ri = "phase"
+    save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+    C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
+
+    for p in [0.25, 0.5, 0.75, 1.0]:
+        alpha1 = p
+        alpha2 = 0
+        alpha3 = 0
+
+        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
+
+        C.gen_lapl()
+
+        C.lapl_solve(h,1)
+
+        ArrangeCrossgraphPlots(C)
+
+        ri = "abs"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
+
+        ri = "phase"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
+
+        pass
+
+    for p in [0.25, 0.5, 0.75, 1.0]:
+        alpha1 = 0
+        alpha2 = p
+        alpha3 = 0
+
+        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
+
+        C.gen_lapl()
+
+        C.lapl_solve(h,1)
+
+        ArrangeCrossgraphPlots(C)
+
+        ri = "abs"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
+
+        ri = "phase"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
+
+        pass
+
+    for p in [0.25, 0.5, 0.75, 1.0]:
+        alpha1 = 0
+        alpha2 = 0
+        alpha3 = p
+
+        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
+
+        C.gen_lapl()
+
+        C.lapl_solve(h,1)
+
+        ArrangeCrossgraphPlots(C)
+
+        ri = "abs"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
+
+        ri = "phase"
+        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
+        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
+
+        pass
