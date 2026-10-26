@@ -604,6 +604,14 @@ class ConfigurationSpace:
         v = np.zeros((np.array(edge_coords).shape[1],dim),dtype=complex)
         
         n = len(gl)
+
+        # Accept either a single phase (applied to the final face, as before)
+        # or one phase per face in the gluing.
+        c = np.atleast_1d(np.asarray(phase, dtype=complex))
+        if c.size == 1:
+            c = np.concatenate((np.ones(n-1, dtype=complex), c))
+        elif c.size != n:
+            raise ValueError("expected 1 or %d phases, got %d" % (n, c.size))
         
         # Convert el to a set for faster lookups
         el_set = set(el)
@@ -650,12 +658,13 @@ class ConfigurationSpace:
             j = np.arange(len(edge_coords[i]))
             # Append the results to the list
             idx = np.column_stack((j, s))
-            if i == n-1:
-                v[idx[:,0],idx[:,1]] += phase*1/n
-                pass
-            else:
-                v[idx[:,0],idx[:,1]] += 1/n
-                pass
+            v[idx[:,0],idx[:,1]] += c[i]/n
+            # if i == n-1:
+            #     v[idx[:,0],idx[:,1]] += phase*1/n
+            #     pass
+            # else:
+            #     v[idx[:,0],idx[:,1]] += 1/n
+            #     pass
             pass
         # NEW CODE END
 
@@ -680,7 +689,7 @@ class ConfigurationSpace:
             pass
 
         # Precompute conjugate of phase as it is used frequently
-        conjugate_phase = np.conjugate(phase)
+        #conjugate_phase = np.conjugate(phase)
         
         # Apply gluing to the Laplacian matrix
         
@@ -690,22 +699,26 @@ class ConfigurationSpace:
             # NEW CODE START
             x = edge_coords[i]
             j = np.arange(len(x))
+
+            x = edge_coords[i]
+            j = np.arange(len(x))
+            v_phase = np.conjugate(c[i]) * v
             nzs = L[:, x].nonzero()[0]
             nzs = np.array(list(set(nzs)))
             if nzs.size > 0:
                 # Get the corresponding values in L for these rows and column x
                 values = L[nzs[:,np.newaxis],x]#.toarray().flatten()
 
-                if i == n-1:
-                    # Update rows using the conjugate of phase
-                    #L[nzs] += conjugate_phase * values @ v[j]
-                    v_phase = conjugate_phase * v
-                    pass
-                else:
-                    # Standard update without phase conjugate
-                    #L[nzs] += values @ v[j]
-                    v_phase = v
-                    pass
+                # if i == n-1:
+                #     # Update rows using the conjugate of phase
+                #     #L[nzs] += conjugate_phase * values @ v[j]
+                #     v_phase = conjugate_phase * v
+                #     pass
+                # else:
+                #     # Standard update without phase conjugate
+                #     #L[nzs] += values @ v[j]
+                #     v_phase = v
+                #     pass
 
                 L[nzs] += values @ v_phase[j]
         

@@ -1,76 +1,50 @@
+import os
+import sys
+
+# Threading controls
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import numpy as np
-import scipy as sp
-import networkx as nx
-from functools import reduce
-import math
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
-
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib import cm
 
-import cells as cls
-import configs
+from mpi4py.futures import MPIPoolExecutor
+
 import ygraph as yga
-import lasso as lsa
+import hgraph as hga
 import lassosubdivided as lss
-import dumbbell as db
 import dumbbellsubdivided as dbs
+import cross as cga
 
-def plot_energy_levels(Cs, alphas, show_plots=True):
-    """
-    Create a scatter plot showing the energy levels on the graph for each value of alpha.
+# Font formatting
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['mathtext.fontset'] = 'dejavuserif'
 
-    Args:
-        Cs (list): A list of ConfigurationSpace objects.
-        show_plots (bool): Whether to display the plots.
-    
-    Returns:
-        None.
-    """
 
-    fig, ax = plt.subplots()
+def plot_energy_levels(spectra, params, filename, xlabel=r"$\alpha$"):
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
 
-    ys = []
-    for C in Cs:
-        spec = C.spectrum
-        spec = np.sort(spec)
-        ys.append(spec)
-        pass
-
-    minimum_eigenvalue = 0
-    maximum_eigenvalue = 20
-
-    ys = np.array(ys)[:,minimum_eigenvalue:maximum_eigenvalue]
-
-    fig.set_size_inches(10, 8)
+    ys = [np.sort(spec) for spec in spectra]
+    ys = np.array(ys)[:, 0:20]
 
     for i in range(ys.shape[1]):
-        #ax.plot(alphas, ys[:,i])
-        ax.plot(alphas, ys[:,i])
+        ax.plot(params, ys[:, i])
 
-    ax.set_xlabel(r"$\alpha$", fontsize=12)
-    ax.set_ylabel("Energy / "+r'$\pi^2$', fontsize=12)
+    ax.tick_params(axis='both', which='both', labelsize=14)
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(r"Energy / $\pi^2$", fontsize=18)
     ax.yaxis.label.set_rotation(0)
-    ax.yaxis.set_label_coords(-0.08, 0.5)
-    # Locate legend outside of plot
-    #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.tight_layout()
-    if show_plots:
-        plt.show()
-        pass
+    ax.yaxis.set_label_coords(-0.14, 0.5)
 
-    # Get user input for filename to save the plot
-    filename = input("Enter filename to save the plot (or press Enter to skip saving): ")
     if filename:
-        fig.savefig(filename+ ".pdf", dpi=300)
-        print(f"Plot saved as {filename}")
-        pass
-    else:
-        print("Plot not saved.")
-        pass
+        plt.savefig(filename, dpi=300, bbox_inches='tight', pad_inches=0.02)
+        print(f"[SUCCESS] Plot saved as {filename}")
 
-
+    plt.close(fig)
 
     return None
 
@@ -128,81 +102,145 @@ def plot_energy_levels_3D(Cs, alphas, show_plots=True):
     if show_plots:
         plt.show()
         pass
-
-
-
+    
     return None
 
-if __name__ =="__main__":
 
 
+# ==========================================
+# Exact Worker Functions
+# ==========================================
+
+def solve_Ygraph_alpha(args):
+    N, alpha = args
+    CY = yga.YgraphAnyonsHardcore(N, alpha)
+    CY.gen_lapl()
+    CY.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CY.spectrum
+
+def solve_Hgraph_single_alpha_varying(args):
+    N, alpha = args
+    CH = hga.HgraphAnyonsHardcore(N, alpha, 0.0)
+    CH.gen_lapl()
+    CH.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CH.spectrum
+
+def solve_Hgraph_all_alphas_varying(args):
+    N, alpha = args
+    CH = hga.HgraphAnyonsHardcore(N, alpha, alpha)
+    CH.gen_lapl()
+    CH.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CH.spectrum
+
+def solve_Lassosubdivided_alpha_varying(args):
+    N, alpha = args
+    CL = lss.LassoSubdividedAnyonsHardcore(N, N, alpha, 0.0)
+    CL.gen_lapl()
+    CL.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CL.spectrum
+
+def solve_Lassosubdivided_beta_varying(args):
+    N, beta = args
+    CL = lss.LassoSubdividedAnyonsHardcore(N, N, 0.0, beta)
+    CL.gen_lapl()
+    CL.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CL.spectrum
+
+def solve_Dumbbellsubdivided_single_alpha_varying(args):
+    N, alpha = args
+    CD = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, alpha, 0.0, 0.0, 0.0)
+    CD.gen_lapl()
+    CD.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CD.spectrum
+
+def solve_Dumbbellsubdivided_all_alphas_varying(args):
+    N, alpha = args
+    CD = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, alpha, alpha, 0.0, 0.0)
+    CD.gen_lapl()
+    CD.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CD.spectrum
+
+def solve_Dumbbellsubdivided_single_beta_varying(args):
+    N, beta = args
+    CD = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, 0.0, 0.0, beta, 0.0)
+    CD.gen_lapl()
+    CD.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CD.spectrum
+
+def solve_Dumbbellsubdivided_all_betas_varying(args):
+    N, beta = args
+    CD = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, 0.0, 0.0, beta, beta)
+    CD.gen_lapl()
+    CD.lapl_solve((np.pi) / (N - 1), N_eigs=20)
+    return CD.spectrum
+
+def solve_Cross_single_alpha_varying(args):
+    N, alpha = args
+    CC = cga.CrossgraphAnyonsHardcore(N, alpha, 0.0, 0.0)
+    CC.gen_lapl()
+    # Request 30 eigenvalues instead of 20
+    CC.lapl_solve((np.pi) / (N - 1), N_eigs=30)
+
+    # Sort low-to-high so each index consistently tracks the same energy level
+    sorted_spec = np.sort(CC.spectrum)
+    return sorted_spec[:20]  # Slice the clean lowest 20
+
+def solve_Cross_all_alphas_varying(args):
+    N, alpha = args
+    CC = cga.CrossgraphAnyonsHardcore(N, alpha, alpha, alpha)
+    CC.gen_lapl()
+    # Request 30 eigenvalues instead of 20
+    CC.lapl_solve((np.pi) / (N - 1), N_eigs=30)
+
+    # Sort low-to-high so each index consistently tracks the same energy level
+    sorted_spec = np.sort(CC.spectrum)
+    return sorted_spec[:20]  # Slice the clean lowest 20
+
+
+# ==========================================
+# Main Execution Dispatcher
+# ==========================================
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python run_single_graph.py <task_id_1_to_11>")
+        sys.exit(1)
+
+    task_id = int(sys.argv[1])
     N = 100
-    h = (np.pi)/(N-1)
-    alphas = np.linspace(0, 1, 25)
+    alphas = np.linspace(-1, 1, 49)
+    betas = np.linspace(-1, 1, 49)
 
-    Cs = []
+    # Task mapping dictionary
+    TASKS = {
+        1: (solve_Ygraph_alpha, alphas, "Energylevels_Ygraph", r"$\alpha$"),
+        2: (solve_Hgraph_single_alpha_varying, alphas, "Energylevels_Hgraph_single_alpha", r"$\alpha_1$"),
+        3: (solve_Hgraph_all_alphas_varying, alphas, "Energylevels_Hgraph_all_alphas", r"$\alpha$"),
+        4: (solve_Lassosubdivided_alpha_varying, alphas, "Energylevels_Lassosubdivided_alpha", r"$\alpha$"),
+        5: (solve_Lassosubdivided_beta_varying, betas, "Energylevels_Lassosubdivided_beta", r"$\beta$"),
+        6: (solve_Dumbbellsubdivided_single_alpha_varying, alphas, "Energylevels_Dumbbellsubdivided_single_alpha", r"$\alpha_1$"),
+        7: (solve_Dumbbellsubdivided_all_alphas_varying, alphas, "Energylevels_Dumbbellsubdivided_all_alphas", r"$\alpha$"),
+        8: (solve_Dumbbellsubdivided_single_beta_varying, betas, "Energylevels_Dumbbellsubdivided_single_beta", r"$\beta_1$"),
+        9: (solve_Dumbbellsubdivided_all_betas_varying, betas, "Energylevels_Dumbbellsubdivided_all_betas", r"$\beta$"),
+        10: (solve_Cross_single_alpha_varying, alphas, "Energylevels_Cross_single_alpha", r"$\alpha_1$"),
+        11: (solve_Cross_all_alphas_varying, alphas, "Energylevels_Cross_all_alphas", r"$\alpha$"),
+    }
 
-    # for alpha in alphas:
-    #     C = yga.YgraphAnyonsHardcore(N, alpha)
-    #     states_filepath = "ygraph_hardcore_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
-    #     eigenvalues_filepath = "ygraph_hardcore_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
-    #     #C.load_states(states_filepath)
-    #     C.load_eigenvalues(eigenvalues_filepath)
-    #     Cs.append(C)
-    #     pass
+    if task_id not in TASKS:
+        raise ValueError(f"Invalid task_id: {task_id}. Must be between 1 and 11.")
 
-    # for alpha in alphas:
-    #     C = yga.YgraphAnyonsRobin(N, alpha)
-    #     C.robin_constant = 0
-    #     states_filepath = "ygraph_neumann_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
-    #     eigenvalues_filepath = "ygraph_neumann_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
-    #     #C.load_states(states_filepath)
-    #     C.load_eigenvalues(eigenvalues_filepath)
-    #     Cs.append(C)
-    #     pass
+    func, params, name, xlabel = TASKS[task_id]
 
-    # alphas = np.linspace(0.2, 0.3, 101)
-    # for alpha in alphas:
-    #     C = yga.YgraphAnyonsHardcore(N, alpha)
-    #     states_filepath = "ygraph_zoom_hardcore_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
-    #     eigenvalues_filepath = "ygraph_zoom_hardcore_eigenvalues/ygraph_N" + str(N) + "_alpha" + str(alpha)
-    #     #C.load_states(states_filepath)
-    #     C.load_eigenvalues(eigenvalues_filepath)
-    #     Cs.append(C)
-    #     pass
+    print(f"=== STARTING TASK {task_id}/11: {name} (N={N}) ===")
 
-    # for alpha in alphas:
-    #     C = lss.LassoSubdividedAnyonsHardcore(N, N, alpha, 0.0)
-    #     states_filepath = "lassosubdivided_hardcore_states/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm0.0_"
-    #     eigenvalues_filepath = "lassosubdivided_hardcore_eigenvalues/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm0.0"
-    #     #C.load_states(states_filepath)
-    #     C.load_eigenvalues(eigenvalues_filepath)
-    #     Cs.append(C)
-    #     pass
+    with MPIPoolExecutor() as executor:
+        spectra = list(executor.map(func, [(N, p) for p in params]))
 
-    for alpha in alphas:
-        C = dbs.DumbbellSubdividedAnyonsHardcore(N, N, N, alpha, alpha, 0.0, 0.0)
-        states_filepath = "dumbbellsubdivided_hardcore_states/dumbbellsubdivided_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha) + "_aharonovbohm1=0.0_" + "_aharonovbohm2=0.0_"
-        eigenvalues_filepath = "dumbbellsubdivided_hardcore_eigenvalues/dumbbellsubdivided_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha) + "_aharonovbohm1=0.0" + "_aharonovbohm2=0.0"
-        #C.load_states(states_filepath)
-        C.load_eigenvalues(eigenvalues_filepath)
-        Cs.append(C)
-        pass
+    # Save raw array data
+    np.save(f"{name}_data.npy", spectra)
+    print(f"[SUCCESS] Spectra data saved as {name}_data.npy")
 
-    # Create list of pairs of alphas
-    # alphas_pairs = [(alpha1, alpha2) for alpha1 in alphas for alpha2 in alphas]
-    # for (alpha1, alpha2) in alphas_pairs:
-    #     C = db.DumbbellAnyonsHardcore(N, alpha1, alpha2)
-    #     eigenvalues_filepath = "dumbbell_hardcore_eigenvalues/dumbbell_N" + str(N) + "_alpha1" + str(alpha1) + "_alpha2" + str(alpha2)
-    #     C.load_eigenvalues(eigenvalues_filepath, override_directory_path=True)
-    #     Cs.append(C)
-    #     pass
+    # Generate PDF plot
+    plot_energy_levels(spectra, params, filename=f"{name}.pdf", xlabel=xlabel)
 
-    plot_energy_levels(Cs, alphas)
-    #plot_energy_levels_3D(Cs, alphas)
-
-    #fig = plt.gcf()
-    # Save plot
-    #fig.savefig("energy_levels_ygraph_anyons_hardcore.pdf", dpi=300)
-
-    pass
+    print(f"=== TASK {task_id} COMPLETED SUCCESSFULLY ===")

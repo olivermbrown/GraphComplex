@@ -903,13 +903,15 @@ def save_dumbbellsubdivided_eigenstates_hardcore(N, alpha1, alpha2, aharonovbohm
 
     return None
 
-def save_cross_eigenstates_hardcore(N, alpha, n_eigs):
+def save_cross_eigenstates_hardcore(N, alpha1, alpha2, alpha3, n_eigs):
     """
     Save the eigenstates of the ConfigurationSpace object for the cross graph to a file.
 
     Args:
         N (int): The number of points in the discretization.
-        alpha (float): The parameter in the boundary conditions.
+        alpha1 (float): The parameter in the boundary conditions for the first wire.
+        alpha2 (float): The parameter in the boundary conditions for the second wire.
+        alpha3 (float): The parameter in the boundary conditions for the third wire.
         n_eigs (int): The number of eigenstates to save.
 
     Returns:
@@ -921,7 +923,7 @@ def save_cross_eigenstates_hardcore(N, alpha, n_eigs):
     h = (np.pi)/(N-1)
 
     folder = "cross_hardcore_states/"
-    filename = "cross_N"+str(N)+"_alpha"+str(alpha)
+    filename = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)
     file_path = folder+filename+"_"
 
     # Create folder if it doesn't exist
@@ -943,13 +945,8 @@ def save_cross_eigenstates_hardcore(N, alpha, n_eigs):
         pass
     eigs_path = eigs_folder+filename
 
-    print("alpha = ", alpha)
-
-    alpha2 = 0.0
-    alpha3 = 0.0
-
     # Create the ConfigurationSpace object.
-    CY = crs.CrossgraphAnyonsHardcore(N, alpha, alpha, alpha)
+    CY = crs.CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
 
     # Generate the Laplacian matrix.
     CY.gen_lapl()
@@ -1092,32 +1089,37 @@ def save_star_eigenstates_hardcore(N, alpha, n_eigs):
 
 if __name__ == "__main__":
     # Main
-    alphas = np.linspace(0, 1, 25)
-    N = 100
-    #alpha = 1.0
-    #Ns = np.linspace(10, 150, 15, dtype=int)
-    args = [(int(N), alpha, 30) for alpha in alphas]
+    #alphas = np.linspace(0, 1, 25)
+    #N = 150
+    alpha = 1.0
+    Ns = np.linspace(10, 150, 15, dtype=int)
+    #args = [(int(N), alpha, 30) for alpha in alphas]
+    args_ygraph = [(int(N), alpha, 30) for N in Ns]
     #args_lassosubdivided = [(int(N), alpha, 0.0, 30) for N in Ns]
     #args_dumbbellsubdivided = [(int(N), alpha, alpha, 0.0, 0.0, 30) for N in Ns]
     #args_cross = [(int(N), alpha, 30) for N in Ns]
     #args_hgraph = [(int(N), alpha, alpha, 30) for alpha in alphas]
+    #args_cross_all_alphas_varying = [(int(N), alpha, 30) for N in Ns]
+    #args_cross_one_alpha_varying = [(int(N), alpha, 0.0, 0.0, 30) for alpha in alphas]
 
     # i defined as system argument
     i = int(sys.argv[1])
 
     # Take ith entry of args
-    arg = args[i]
+    arg = args_ygraph[i]
 
     # Set up the pool of workers
     # with mp.Pool() as pool:
     #     # Parallel execution using starmap which directly supports multiple arguments
     #     pool.starmap(save_lasso_eigenstates, args)
 
+    save_ygraph_eigenstates_hardcore(*arg)
     #save_star_eigenstates_hardcore(*arg)
     #save_lassosubdivided_eigenstates_hardcore(*arg)
     #save_cross_all_alphas_varying_eigenstates_hardcore(*arg)
+    #save_cross_eigenstates_hardcore(*arg)
     #save_hgraph_eigenstates_hardcore(*arg)
-    save_hgraph_all_alphas_varying_eigenstates_hardcore(*arg)
+    #save_hgraph_all_alphas_varying_eigenstates_hardcore(*arg)
     #save_dumbbellsubdivided_eigenstates_hardcore(*arg)
     #save_cross_eigenstates_hardcore(*arg)
 

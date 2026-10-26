@@ -77,7 +77,7 @@ def CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3):
     CY = configs.ConfigurationSpace([D11,D22,D33,D44,D12,D13,D14,D23,D24,D34])
 
     gluing1 = [D11.x0, D12.y0, D13.y0, D14.y0]
-    gluing2 = [D22.x0, D12.x0, D24.y0, D23.y0]
+    gluing2 = [D22.x0, D12.x0, D23.y0, D24.y0]
     gluing3 = [D33.x0, D13.x0, D23.x0, D34.y0]
     gluing4 = [D44.x0, D14.x0, D34.x0, D24.x0]
 
@@ -86,9 +86,9 @@ def CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3):
     phase3 = np.exp(1j*np.pi*alpha3)
 
     CY.glue(gluing1)
-    CY.glue_with_branch_cut(gluing2, phase1)
-    CY.glue_with_branch_cut(gluing3, phase2)
-    CY.glue_with_branch_cut(gluing4, phase3)
+    CY.glue_with_branch_cut(gluing2, [1,1,phase1,phase2])
+    CY.glue_with_branch_cut(gluing3, phase3)
+    CY.glue(gluing4)
 
     CY.exterior_bc("dirichlet")
     CY.diagonal_bc("dirichlet")
@@ -244,9 +244,9 @@ if __name__ == "__main__":
 
     N = 20
     h = (np.pi)/(N-1)
-    alpha1 = 0.0
-    alpha2 = 0.0
-    alpha3 = 0.0
+    alpha1 = 0.75
+    alpha2 = 0.75
+    alpha3 = 0.75
 
     #C = CrossgraphBosons(N)
 
@@ -276,72 +276,3 @@ if __name__ == "__main__":
     ri = "phase"
     save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
     C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
-
-    for p in [0.25, 0.5, 0.75, 1.0]:
-        alpha1 = p
-        alpha2 = 0
-        alpha3 = 0
-
-        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
-
-        C.gen_lapl()
-
-        C.lapl_solve(h,1)
-
-        ArrangeCrossgraphPlots(C)
-
-        ri = "abs"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
-
-        ri = "phase"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
-
-        pass
-
-    for p in [0.25, 0.5, 0.75, 1.0]:
-        alpha1 = 0
-        alpha2 = p
-        alpha3 = 0
-
-        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
-
-        C.gen_lapl()
-
-        C.lapl_solve(h,1)
-
-        ArrangeCrossgraphPlots(C)
-
-        ri = "abs"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
-
-        ri = "phase"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
-
-        pass
-
-    for p in [0.25, 0.5, 0.75, 1.0]:
-        alpha1 = 0
-        alpha2 = 0
-        alpha3 = p
-
-        C = CrossgraphAnyonsHardcore(N, alpha1, alpha2, alpha3)
-
-        C.gen_lapl()
-
-        C.lapl_solve(h,1)
-
-        ArrangeCrossgraphPlots(C)
-
-        ri = "abs"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="abs",N_levels=20, save_as=save_name)
-
-        ri = "phase"
-        save_name = "cross_N"+str(N)+"_alpha1="+str(alpha1)+"_alpha2="+str(alpha2)+"_alpha3="+str(alpha3)+"_"+ri+"_contour.pdf"
-        C.plot_states(0,plotting_method="contour",realimag="phase",N_levels=20, save_as=save_name)
-
-        pass

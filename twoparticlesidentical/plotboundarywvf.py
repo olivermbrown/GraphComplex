@@ -9,6 +9,10 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
+# Font formatting
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['mathtext.fontset'] = 'dejavuserif'
+
 import cells as cls
 import configs
 import ygraph as yga
@@ -203,10 +207,10 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     approx = np.sin(np.pi*ys[:edge_length])*max
     #plt.plot(ys[:edge_length], np.abs(psi))
     if show_plots:
-        plt.close('all')
-        plt.plot(ys[:edge_length], psi)
-        plt.plot(ys[:edge_length],approx,color='red')
-        plt.show()
+        #plt.close('all')
+        #plt.plot(ys[:edge_length], psi)
+        #plt.plot(ys[:edge_length],approx,color='red')
+        #plt.show()
         pass
     else:
         plt.close('all')
@@ -215,15 +219,15 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     # Plot the log log plot of the wavefunction on the edge
     plt.clf()
     if show_plots:
-        plt.scatter(np.log(ys[:edge_length]),np.log(np.abs(psi)))
+        #plt.scatter(np.log(ys[:edge_length]),np.log(np.abs(psi)))
         pass
     else:
         plt.close('all')
 
     # Calculate the slope of the line from first several points
     degree = 1
-    start = 5
-    cutoff = 33
+    start = 3
+    cutoff = 22
     polyfeatures = PolynomialFeatures(degree).fit_transform(ys[start:cutoff].reshape(-1,1))
     logfeatures = np.log(np.abs(ys[start:cutoff]).reshape(-1,1))
     features = np.concatenate((logfeatures,polyfeatures),axis=1)
@@ -244,9 +248,9 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     print(m)
 
     # Error estimate code: shift the window
-    shift = 2
-    start_lower = start - shift
-    start_upper = start + shift
+    shift = 15
+    start_lower = start
+    start_upper = start
     cutoff_lower = cutoff - shift
     cutoff_upper = cutoff + shift
     polyfeatures_low = PolynomialFeatures(degree).fit_transform(ys[start_lower:cutoff_lower].reshape(-1,1))
@@ -279,7 +283,10 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     print(m_low)
     print(m_high)
 
-    se_m0 = np.max([np.abs(m[0]-m_low[0]), np.abs(m[0]-m_high[0])])
+    error_lower = np.abs(m[0]-m_low[0])
+    error_upper = np.abs(m[0]-m_high[0])
+    errors = [error_lower, error_upper]
+    #se_m0 = np.max([np.abs(m[0]-m_low[0]), np.abs(m[0]-m_high[0])])
 
 
     # Old error code
@@ -304,16 +311,31 @@ def plot_boundary_wavefunction(complex, gluing, show_plots=True, lasso=False, st
     # se_m0 = np.sqrt(cov_matrix[0, 0])
     # print("Standard error of the first coefficient (m[0]):", se_m0)
 
-    # # Plot show the log log plot with the linear fit through the first three points in red
-    # if show_plots:
-    #     plt.plot(np.log(r), polynomial, color='red')
-    #     plt.show()
-    #     pass
-    # else:
-    #     plt.close('all')
-    #     pass
+    # Plot show the log log plot with the linear fit through the first three points in red
+    if show_plots:
+        fig, ax = plt.subplots(figsize=(10,8), constrained_layout="True")
+        ax.scatter(np.log(ys[:edge_length]),np.log(np.abs(psi)), color='blue', marker='x', s=40, label="Numerical data")
+        ax.plot(np.log(r), polynomial, color='darkorange', linewidth=4, label="Linear fit")
+        ax.set_xlabel(r"$\log(r)$", fontsize=26)
+        # Y axis label
+        ax.set_ylabel(r"$\log|\Psi(r)|$", rotation=0, fontsize=26)
+        # Move y axis label
+        ax.yaxis.set_label_coords(-0.25, 0.5)
+        # Rotate y axis label
+        # Set the range for the y axis
+        # Increase tick size
+        ax.tick_params(axis='both', which='both', labelsize=20)
+        ax.legend(loc='upper left', fontsize=26)
 
-    return m[0], se_m0
+        plt.savefig("ygraph_hardcore_log_log" + ".pdf", dpi=300, bbox_inches='tight')
+
+        plt.show()
+        pass
+    else:
+        plt.close('all')
+        pass
+
+    return m[0], errors
 
 def plot_hypotenuse_wavefunction(complex, cell, show_plots=True, lasso=False, state_number=None, extrapolate_to_origin=False, start=2, cutoff=25):
     """
@@ -558,7 +580,7 @@ def ygraph_hardcore_interpolation(N):
     CYs = []
     gluing1s = []
     ms = []
-    ses = []
+    errs = []
     for alpha in alphas:
         C = yga.YgraphAnyonsHardcore(N, alpha)
         states_filepath = "ygraph_hardcore_states/ygraph_N" + str(N) + "_alpha" + str(alpha) + "_"
@@ -569,25 +591,38 @@ def ygraph_hardcore_interpolation(N):
         gluing = C.gluings[0]
         print("alpha = ", alpha)
         yga.ArrangeYgraphPlots(C)
-        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False)
+        m, err = plot_boundary_wavefunction(C,gluing,show_plots=True)
         ms.append(m)
-        ses.append(se)
+        errs.append(err)
         pass
+
+    errors = np.transpose(np.array(errs))
 
     # Produce scatter plot of m against alpha
     plt.clf()
     #plt.plot(alphas, ms)
     betas_analytic = ygraph_hardcore_analytic()
-    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Data with error bars')
-    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.errorbar(alphas, ms, yerr=errors, fmt='.', capsize=5, label='Data with error bars')
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+    ax.plot(alphas, betas_analytic, label='Heuristic estimate', color='darkblue', linewidth=3)
+    ax.fill_between(alphas, np.array(ms)-errors[0], np.array(ms)+errors[1], color='skyblue', alpha=0.2, label='Numerical estimate with error range')
     #plt.scatter(alphas, ms)
     # X axis label
-    plt.xlabel(r"$\alpha$")
+    ax.set_xlabel(r"$\alpha$", fontsize=26)
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    ax.set_ylabel(r"$\sigma$", rotation=0, labelpad=10, fontsize=26)
     # Rotate y axis label
-    plt.yticks(rotation=0)
+    # Set the range for the y axis
+    ax.set_ylim(0.5, 1.1)
+    # Increase tick size
+    ax.tick_params(axis='both', which='both', labelsize=20)
+    ax.legend(loc='upper left', fontsize=26)
+
+    plt.savefig("ygraph_hardcore_interpolation_N" + str(N) + ".pdf", dpi=300, bbox_inches='tight')
+
     plt.show()
+
+    plt.close('all')
 
     return None
 
@@ -838,7 +873,7 @@ def lassosubdivided_hardcore_interpolation(N):
 
     CYs = []
     ms = []
-    ses = []
+    errs = []
     for alpha in alphas:
         C = lss.LassoSubdividedAnyonsHardcore(N, N, alpha, ab)
         states_filepath = "lassosubdivided_hardcore_states/lassosubdivided_N" + str(N) + "_alpha" + str(alpha) + "_aharonovbohm" + str(ab) + "_"
@@ -847,26 +882,37 @@ def lassosubdivided_hardcore_interpolation(N):
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
         #gluing = C.gluings_with_branch_cut[2][0]
-        gluing = C.gluings[0]
+        gluing = C.gluings[1]
         print("alpha = ", alpha)
-        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
+        m, err = plot_boundary_wavefunction(C,gluing,show_plots=False,lasso=True)
         ms.append(m)
-        ses.append(se)
+        errs.append(err)
         pass
+
+    errors = np.transpose(np.array(errs))
 
     # Produce scatter plot of m against alpha
     plt.clf()
     #plt.plot(alphas, ms)
     betas_analytic = ygraph_hardcore_analytic()
-    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Data with error bars')
-    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.errorbar(alphas, ms, yerr=errors, fmt='.', capsize=5, label='Data with error bars')
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+    ax.plot(alphas, betas_analytic, label='Heuristic estimate', color='darkblue', linewidth=3)
+    ax.fill_between(alphas, np.array(ms)-errors[0], np.array(ms)+errors[1], color='skyblue', alpha=0.2, label='Numerical estimate with error range')
     #plt.scatter(alphas, ms)
     # X axis label
-    plt.xlabel(r"$\alpha$")
+    ax.set_xlabel(r"$\alpha$", fontsize=26)
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    ax.set_ylabel(r"$\sigma$", rotation=0, labelpad=10, fontsize=26)
     # Rotate y axis label
-    plt.yticks(rotation=0)
+    # Increase tick size
+    ax.tick_params(axis='both', which='both', labelsize=20)
+    # Set the range for the y axis
+    ax.set_ylim(0.5, 1.1)
+    ax.legend(loc='upper left', fontsize=26)
+
+    plt.savefig("lassosubdivided_hardcore_interpolation_N" + str(N) + ".pdf", dpi=300, bbox_inches='tight')
+
     plt.show()
 
     # # Produce scatter plot of m against alpha
@@ -888,40 +934,32 @@ def lassosubdivided_hardcore_interpolation(N):
 
 def cross_hardcore_analytic_single_alpha_varying():
 
-    betas = [0.666667,0.66706,0.668238,0.670192,0.672911,0.676375,0.680564,0.685448,0.690994,0.697163,0.703909,0.711181,0.718916,0.727044,0.735481,0.744126,0.752856,0.761525,0.769947,0.777896,0.785099,0.791238,0.79597,0.79897,0.8]
-
-    return betas
-
-def cross_hardcore_analytic_all_alphas_varying():
-
-    betas = [
-    0.666667,
-    0.66902,
-    0.67598,
-    0.687258,
-    0.702399,
-    0.72082,
-    0.741847,
-    0.764755,
-    0.000579487,
-    0.000407745,
-    0.933957,
-    0.906285,
-    0.88283,
-    0.903109,
-    0.921423,
-    0.937649,
-    0.000276197,
-    0.84195,
-    0.850316,
-    0.864044,
-    0.88283,
-    0.906285,
-    0.933957,
-    0.965363,
-    0.999999,
+    betas = [0.666667,
+    0.667060,
+    0.668238,
+    0.670192,
+    0.672911,
+    0.676375,
+    0.680564,
+    0.685448,
+    0.690994,
+    0.697163,
+    0.703909,
+    0.711181,
+    0.718916,
+    0.727044,
+    0.735481,
+    0.744126,
+    0.752856,
+    0.761525,
+    0.769947,
+    0.777896,
+    0.785099,
+    0.791238,
+    0.795970,
+    0.798970,
+    0.800000,
     ]
-
     return betas
 
 def crossgraph_single_alpha_varying_hardcore_interpolation(N):
@@ -934,69 +972,77 @@ def crossgraph_single_alpha_varying_hardcore_interpolation(N):
     CYs = []
     gluing1s = []
     ms = []
-    ses = []
+    errs = []
     for alpha in alphas:
         C = cga.CrossgraphAnyonsHardcore(N, alpha, alpha2, alpha3)
-        states_filepath = "cross_hardcore_states/cross_N" + str(N) + "_alpha" + str(alpha) + "_"
-        eigenvalues_filepath = "cross_hardcore_eigenvalues/cross_N" + str(N) + "_alpha" + str(alpha)
+        states_filepath = "cross_hardcore_states/cross_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha2) + "_alpha3=" + str(alpha3) + "_"
+        eigenvalues_filepath = "cross_hardcore_eigenvalues/cross_N" + str(N) + "_alpha1=" + str(alpha) + "_alpha2=" + str(alpha2) + "_alpha3=" + str(alpha3)
         C.load_states(states_filepath)
         C.load_eigenvalues(eigenvalues_filepath)
         CYs.append(C)
-        #gluing = C.gluings[1]
-        gluing = C.gluings_with_branch_cut[0][0]
+        gluing = C.gluings[0]
+        #gluing = C.gluings_with_branch_cut[0][0]
         print("alpha = ", alpha)
         cga.ArrangeCrossgraphPlots(C)
-        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False)
+        m, err = plot_boundary_wavefunction(C,gluing,show_plots=False)
         ms.append(m)
-        ses.append(se)
+        errs.append(err)
         pass
+
+    errors = np.transpose(np.array(errs))
 
     # Produce scatter plot of m against alpha
     plt.clf()
     #plt.plot(alphas, ms)
     betas_analytic = cross_hardcore_analytic_single_alpha_varying()
-    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
-    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+    ax.plot(alphas, betas_analytic, color='darkblue', label='Heuristic estimate', linewidth=3)
+    ax.fill_between(alphas, np.array(ms)-errors[0], np.array(ms)+errors[0], color='skyblue', alpha=0.2, label='Numerical estimate with error range')
     #plt.scatter(alphas, ms)
     # X axis label
-    plt.xlabel(r"$\alpha$")
+    ax.set_xlabel(r"$\alpha_1$", fontsize=26)
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    ax.set_ylabel(r"$\sigma$", rotation=0, labelpad=10, fontsize=26)
     # Rotate y axis label
-    plt.yticks(rotation=0)
-    plt.legend(fontsize=14, loc='lower right')
+    # Ticks size
+    ax.tick_params(axis='both', which='both', labelsize=20)
+    ax.set_ylim(0.5, 1.1)
+    ax.legend(loc='upper left', fontsize=26)
+
+    plt.savefig("crossgraph_hardcore_interpolation_single_alpha_varying_N" + str(N) + ".pdf", dpi=300, bbox_inches='tight')
+
     plt.show()
 
     return None
 
 def cross_hardcore_analytic_all_alphas_varying():
 
-    betas = [
-    0.666667,
-    0.66902,
-    0.67598,
-    0.687258,
-    0.702399,
-    0.72082,
-    0.741847,
-    0.764755,
-    0.000579487,
-    0.000407745,
-    0.933957,
-    0.906285,
-    0.88283,
-    0.903109,
-    0.921423,
-    0.937649,
-    0.000276197,
-    0.84195,
-    0.850316,
-    0.864044,
-    0.88283,
-    0.906285,
-    0.933957,
-    0.965363,
-    0.999999,
+    betas = [0.666667,
+        0.667453,
+        0.669807,
+        0.673707,
+        0.679121,
+        0.686006,
+        0.694307,
+        0.703962,
+        0.714901,
+        0.727049,
+        0.740327,
+        0.754654,
+        0.769947,
+        0.786123,
+        0.803101,
+        0.820799,
+        0.839139,
+        0.858042,
+        0.877432,
+        0.897237,
+        0.917384,
+        0.937802,
+        0.958423,
+        0.979178,
+        0.999999,
     ]
 
     return betas
@@ -1011,7 +1057,7 @@ def crossgraph_all_alphas_varying_hardcore_interpolation(N):
     CYs = []
     gluing1s = []
     ms = []
-    ses = []
+    errs = []
     for alpha in alphas:
         C = cga.CrossgraphAnyonsHardcore(N, alpha, alpha2, alpha3)
         states_filepath = "cross_all_alphas_varying_hardcore_states/cross_N" + str(N) + "_alpha" + str(alpha) + "_"
@@ -1023,25 +1069,33 @@ def crossgraph_all_alphas_varying_hardcore_interpolation(N):
         #gluing = C.gluings_with_branch_cut[0][0]
         print("alpha = ", alpha)
         cga.ArrangeCrossgraphPlots(C)
-        m, se = plot_boundary_wavefunction(C,gluing,show_plots=False)
+        m, err = plot_boundary_wavefunction(C,gluing,show_plots=False)
         ms.append(m)
-        ses.append(se)
+        errs.append(err)
         pass
+
+    errors = np.transpose(np.array(errs))
 
     # Produce scatter plot of m against alpha
     plt.clf()
     #plt.plot(alphas, ms)
     betas_analytic = cross_hardcore_analytic_all_alphas_varying()
-    plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
-    plt.plot(alphas, betas_analytic, label='Analytic solution')
+    #plt.errorbar(alphas, ms, yerr=ses, fmt='.', capsize=5, label='Numerical estimate')
+    fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+    ax.plot(alphas, betas_analytic, color='darkblue', label='Heuristic estimate', linewidth=3)
+    ax.fill_between(alphas, np.array(ms)-errors[0], np.array(ms)+errors[0], color='skyblue', alpha=0.2, label='Numerical estimate with error range')
     #plt.scatter(alphas, ms)
     # X axis label
-    plt.xlabel(r"$\alpha$")
+    ax.set_xlabel(r"$\alpha$", fontsize=26)
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    ax.set_ylabel(r"$\sigma$", rotation=0, labelpad=10, fontsize=26)
     # Rotate y axis label
-    plt.yticks(rotation=0)
-    plt.legend(fontsize=14, loc='lower right')
+    ax.tick_params(axis='both', labelsize=20)
+    ax.set_ylim(0.5, 1.1)
+    ax.legend(loc='upper left', fontsize=26)
+
+    plt.savefig("crossgraph_hardcore_interpolation_all_alphas_varying_N" + str(N) + ".pdf", dpi=300, bbox_inches='tight')
+
     plt.show()
 
     return None
@@ -1077,7 +1131,7 @@ def dumbbell_hardcore_interpolation(N):
         # X axis label
         plt.xlabel(r"$\alpha$")
         # Y axis label
-        plt.ylabel(r"$\beta$")
+        plt.ylabel(r"$\sigma$")
         plt.show()
     
         return None
@@ -1113,7 +1167,7 @@ def singlesquarecell_hardcore_interpolation(N):
     # X axis label
     plt.xlabel(r"$\alpha$")
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    plt.ylabel(r"$\sigma$", rotation=0)
     # Rotate y axis label
     plt.yticks(rotation=0)
     plt.show()
@@ -1153,7 +1207,7 @@ def twowires_hardcore_interpolation(N):
     # X axis label
     plt.xlabel(r"$\alpha$")
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    plt.ylabel(r"$\sigma$", rotation=0)
     # Rotate y axis label
     plt.yticks(rotation=0)
     plt.show()
@@ -1227,7 +1281,7 @@ def model_function_interpolation(N):
     # X axis label
     plt.xlabel(r"$\alpha$")
     # Y axis label
-    plt.ylabel(r"$\beta$", rotation=0)
+    plt.ylabel(r"$\sigma$", rotation=0)
     # Rotate y axis label
     plt.yticks(rotation=0)
     plt.show()
@@ -1281,6 +1335,7 @@ if __name__ =="__main__":
     #ygraph_hardcore_interpolation_hypotenuse(N)
     #singlesquarecell_hardcore_interpolation(N)
     #lassosubdivided_hardcore_interpolation(N)
+    #crossgraph_single_alpha_varying_hardcore_interpolation(N)
     crossgraph_all_alphas_varying_hardcore_interpolation(N)
     #twowires_hardcore_interpolation(N)
     #model_function_interpolation(N)

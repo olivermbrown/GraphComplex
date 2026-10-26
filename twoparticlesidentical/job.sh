@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=Hgraph_hardcore_all_alphas_varying
+#SBATCH --job-name=ygraph_convergence_retry
 #SBATCH --partition=compute
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
